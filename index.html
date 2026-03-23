@@ -1227,7 +1227,9 @@
                 style="color:var(--accent)">Finanzas</span></div>
           </div>
           <div style="display:flex;gap:12px">
-            <div class="sync-btn" onclick="if(confirm('¿Volver a la configuración inicial para cambiar la URL del script?')) { localStorage.removeItem('cc_script_url'); location.reload(); }" style="font-size:18px; opacity: 0.7;" title="Configuración">⚙️</div>
+            <div class="sync-btn"
+              onclick="if(confirm('¿Volver a la configuración inicial para cambiar la URL del script?')) { localStorage.removeItem('cc_script_url'); location.reload(); }"
+              style="font-size:18px; opacity: 0.7;" title="Configuración">⚙️</div>
             <div class="sync-btn" id="sync-btn" onclick="syncAll()" title="Sincronizar">↻</div>
           </div>
         </div>
