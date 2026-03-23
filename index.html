@@ -1226,7 +1226,10 @@
             <div class="page-title" style="font-family:var(--display);font-weight:700">Nexo<span
                 style="color:var(--accent)">Finanzas</span></div>
           </div>
-          <div class="sync-btn" id="sync-btn" onclick="syncAll()" title="Sincronizar">↻</div>
+          <div style="display:flex;gap:12px">
+            <div class="sync-btn" onclick="if(confirm('¿Volver a la configuración inicial para cambiar la URL del script?')) { localStorage.removeItem('cc_script_url'); location.reload(); }" style="font-size:18px; opacity: 0.7;" title="Configuración">⚙️</div>
+            <div class="sync-btn" id="sync-btn" onclick="syncAll()" title="Sincronizar">↻</div>
+          </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
         <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603230147</div>
@@ -2099,14 +2102,19 @@ function updateGastoFijo(ss, data) {
     // Petición a Google Apps Script
     // GET para leer (evita preflight), POST para escribir (soporta JSON complejo)
     async function gasGet(params) {
-      // GAS redirige POST->GET perdiendo el body. Usamos siempre GET con
-      // todo el payload en un unico parametro JSON para evitar el problema.
-      const url = new URL(SCRIPT_URL);
-      url.searchParams.set('payload', JSON.stringify(params));
-      const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-      const text = await r.text();
-      try { return JSON.parse(text); }
-      catch (e) { throw new Error('Respuesta no valida: ' + text.substring(0, 120)); }
+      try {
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.set('payload', JSON.stringify(params));
+        const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+        if (!r.ok) throw new Error('Error HTTP: ' + r.status);
+        const text = await r.text();
+        if (!text) throw new Error('Respuesta vacía del servidor');
+        try { return JSON.parse(text); }
+        catch (e) { throw new Error('Formato no válido: ' + text.substring(0, 50)); }
+      } catch (e) {
+        console.error('GAS Error:', e);
+        throw e;
+      }
     }
 
     async function syncAll() {
