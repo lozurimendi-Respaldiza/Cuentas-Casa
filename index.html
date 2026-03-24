@@ -1561,7 +1561,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Tipo</label>
-        <select class="form-inp" id="ef-tipo">
+        <select class="form-inp" id="ef-tipo" onchange="document.getElementById('ef-tipogasto-group').style.display = this.value === 'Gasto' ? 'block' : 'none'">
           <option value="Gasto">Gasto en efectivo</option>
           <option value="Entrada">Entrada (retirada cajero)</option>
         </select>
@@ -1681,7 +1681,7 @@
         <select class="form-inp" id="edit-categoria"></select>
       </div>
       <button class="btn-submit" onclick="saveEditRegistro()">Guardar cambios</button>
-      <button class="btn-canceLl" onclick="closeModal('modal-edit')">Cancelar</button>
+      <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
     </div>
   </div>
 
@@ -1702,7 +1702,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Tipo</label>
-        <select class="form-inp" id="edit-ef-tipo">
+        <select class="form-inp" id="edit-ef-tipo" onchange="document.getElementById('edit-ef-tipogasto-group').style.display = this.value === 'Gasto' ? 'block' : 'none'">
           <option value="Gasto">Gasto en efectivo</option>
           <option value="Entrada">Entrada (retirada cajero)</option>
         </select>
@@ -2301,15 +2301,25 @@ function updateGastoFijo(ss, data) {
     function renderStats() {
       const thisMonth = new Date().toISOString().slice(0, 7);
 
-      // Saldo total histórico (todos los registros, excluyendo No computable)
+      // Efectivo saldo
+      const efEntradas = DB.efectivo.filter(r => r.tipo === 'Entrada').reduce((s, r) => s + r.importe, 0);
+      const efGastos = DB.efectivo.filter(r => r.tipo === 'Gasto').reduce((s, r) => s + r.importe, 0);
+      const efSaldo = efEntradas - efGastos;
+
+      // Saldo total histórico (banco + efectivo)
       const totalIngresos = DB.registros.filter(r => r.tipomov === 'Ingreso').reduce((s, r) => s + r.importe, 0);
       const totalGastos = DB.registros.filter(r => r.tipomov === 'Gasto').reduce((s, r) => s + r.importe, 0);
-      const saldoTotal = totalIngresos + totalGastos;
+      const saldoTotal = totalIngresos + totalGastos + efSaldo;
+      
       const stEl = document.getElementById('stat-saldo-total');
       stEl.textContent = fmt(saldoTotal);
       stEl.className = 'stat-val ' + (saldoTotal >= 0 ? 'green' : 'red');
 
-      // Rango de fechas
+      // Actualizar badges específicos
+      document.getElementById('stat-efectivo').textContent = fmt(efSaldo);
+      document.getElementById('ef-saldo-val').textContent = fmt(efSaldo);
+
+      // Rango de fechas (solo de registros bancarios para mantener la relevancia del timeline)
       const fechas = DB.registros.map(r => r.fecha).filter(Boolean).sort();
       if (fechas.length) {
         const d1 = fmtDate(fechas[0]);
@@ -2333,11 +2343,6 @@ function updateGastoFijo(ss, data) {
       sEl.className = 'stat-val ' + (saldo >= 0 ? 'green' : 'red');
       document.getElementById('stat-saldo-sub').textContent = mes;
 
-      const efEntradas = DB.efectivo.filter(r => r.tipo === 'Entrada').reduce((s, r) => s + r.importe, 0);
-      const efGastos = DB.efectivo.filter(r => r.tipo === 'Gasto').reduce((s, r) => s + r.importe, 0);
-      const efSaldo = efEntradas - efGastos;
-      document.getElementById('stat-efectivo').textContent = fmt(efSaldo);
-      document.getElementById('ef-saldo-val').textContent = fmt(efSaldo);
     }
 
     function nextDate(ultimo, freq) {
@@ -2784,6 +2789,25 @@ function updateGastoFijo(ss, data) {
     // ═══════════════════════════════════════════════════════════
     // SAVE
     // ═══════════════════════════════════════════════════════════
+    function onEfCategoriaChange() {
+      const catVal = document.getElementById('ef-categoria').value;
+      if (!catVal) return;
+
+      let foundSub = '';
+      if (CATS.Gasto.Supervivencia.includes(catVal)) foundSub = 'Supervivencia';
+      else if (CATS.Gasto.Estilo.includes(catVal)) foundSub = 'Estilo';
+      else if (CATS.Gasto.Deuda.includes(catVal)) foundSub = 'Deuda';
+
+      if (foundSub) {
+        document.getElementById('ef-tipo').value = 'Gasto';
+        document.getElementById('ef-tipogasto').value = foundSub;
+        document.getElementById('ef-tipogasto-group').style.display = 'block';
+      } else if (CATS.Ingreso.includes(catVal)) {
+        document.getElementById('ef-tipo').value = 'Entrada';
+        document.getElementById('ef-tipogasto-group').style.display = 'none';
+      }
+    }
+
     async function saveRegistro() {
       const fecha = document.getElementById('f-fecha').value;
       const importe = parseFloat(document.getElementById('f-importe').value);
