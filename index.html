@@ -1713,7 +1713,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Categoría</label>
-        <select class="form-inp" id="edit-ef-categoria"></select>
+        <select class="form-inp" id="edit-ef-categoria" onchange="onEfCategoriaChange()"></select>
       </div>
       <div class="form-group" id="edit-ef-tipogasto-group">
         <label class="form-label">Tipo de gasto</label>
@@ -2395,8 +2395,8 @@ function updateGastoFijo(ss, data) {
         const badgeCls = r.tipogasto === 'Supervivencia' ? 'fijo' : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda') ? 'variable' : r.tipomov === 'Ingreso' ? 'ingreso' : 'nocomp';
         const badgeTxt = r.tipogasto || r.tipomov;
         // Calcular índice real en DB para edición
-        const dbIdx = srcType === 'ef' ? DB.efectivo.indexOf(r) : DB.registros.indexOf(r);
-        const clickFn = srcType === 'ef'
+        const dbIdx = (r._idx !== undefined) ? r._idx : (srcType === 'efectivo' ? DB.efectivo.indexOf(r) : DB.registros.indexOf(r));
+        const clickFn = srcType === 'efectivo'
           ? `openEditEfectivo(${dbIdx})`
           : `openEditRegistro(${dbIdx})`;
         return `<div class="tx" onclick="${clickFn}" style="cursor:pointer">
@@ -2530,8 +2530,8 @@ function updateGastoFijo(ss, data) {
       const hasta = document.getElementById('q-fecha-hasta').value;
 
       // Construir pool banco + efectivo
-      let banco = DB.registros.map(r => ({ ...r, _src: 'banco' }));
-      let ef = DB.efectivo.map(r => ({
+      let banco = DB.registros.map((r, i) => ({ ...r, _src: 'banco', _idx: i }));
+      let ef = DB.efectivo.map((r, i) => ({
         fecha: r.fecha, 
         concepto: r.concepto, 
         categoria: r.categoria || r.descripcion || r.tipo,
@@ -2540,7 +2540,8 @@ function updateGastoFijo(ss, data) {
         tipomov: r.tipo === 'Entrada' ? 'Ingreso' : 'Gasto',
         tipogasto: r.tipogasto || (r.tipo === 'Entrada' ? 'Ingreso' : 'Efectivo'), 
         entidad: 'Efectivo', 
-        _src: 'efectivo'
+        _src: 'efectivo',
+        _idx: i
       }));
 
       let results = [];
@@ -2606,10 +2607,8 @@ function updateGastoFijo(ss, data) {
             : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda')
               ? '<span class="badge variable" style="margin-left:4px">var</span>'
               : '';
-          const dbIdx2 = r._src === 'ef' ? DB.efectivo.indexOf(r) : DB.registros.findIndex(x => x.fecha === r.fecha && x.concepto === r.concepto && x.importe === r.importe);
-          const clickQ = r._src === 'efectivo' ? `openEditEfectivo(${-1})` : `openEditRegistro(${-1})`;
-          // Para consultas usamos un data-attr y buscamos al pulsar
-          return `<div class="tx" onclick="openEditFromConsulta(this)" data-src="${r._src || 'banco'}" data-fecha="${r.fecha}" data-concepto="${(r.concepto || '').replace(/"/g, '&quot;')}" data-importe="${r.importe}" style="cursor:pointer">
+          // Render item
+          return `<div class="tx" onclick="openEditFromConsulta(this)" data-src="${r._src || 'banco'}" data-idx="${r._idx}" style="cursor:pointer">
         <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : 'red'}-bg)">${icon}</div>
         <div class="tx-info">
           <div class="tx-name">${r.concepto || '-'}</div>
@@ -2710,27 +2709,6 @@ function updateGastoFijo(ss, data) {
       }
     }
 
-    function onEfCategoriaChange() {
-      const catVal = document.getElementById('ef-categoria').value;
-      if (!catVal) return;
-
-      let foundSub = '';
-      for (let sub in CATS.Gasto) {
-        if (CATS.Gasto[sub].includes(catVal)) {
-          foundSub = sub;
-          break;
-        }
-      }
-      
-      const tipo = document.getElementById('ef-tipo').value;
-      if (tipo === 'Gasto' && foundSub) {
-        document.getElementById('ef-tipogasto-group').style.display = 'block';
-        document.getElementById('ef-tipogasto').value = foundSub;
-      } else {
-        document.getElementById('ef-tipogasto-group').style.display = 'none';
-      }
-    }
-
     function openModal(id) {
       document.getElementById(id).classList.add('open');
       document.body.style.overflow = 'hidden';
@@ -2752,11 +2730,7 @@ function updateGastoFijo(ss, data) {
       const currentCat = cat.value;
       
       tg.style.display = tipo === 'Gasto' ? 'flex' : 'none';
-      
-      // Solo refiltrar si no hay categoría seleccionada o si la seleccionada no pertenece al nuevo tipo
-      if (tipo !== 'Gasto') {
-        fillCats(tipo, '', currentCat);
-      }
+      if (tipo !== 'Gasto') fillCats(tipo, '', currentCat);
     }
 
     function onTipoGastoChange() {
@@ -2772,13 +2746,8 @@ function updateGastoFijo(ss, data) {
       else if (tipo === 'Ingreso') opts = CATS.Ingreso;
       else if (tipo === 'Futuro') opts = CATS['Futuro'];
       
-      // Si estamos en modo "todo" (porque acabamos de abrir el modal), no filtramos
       if (!tipo && !sub) return;
-
       cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option${o === preserveValue ? ' selected' : ''}>${o}</option>`).join('');
-      if (preserveValue && !cat.value && opts.includes(preserveValue)) {
-        cat.value = preserveValue;
-      }
     }
 
     function setDate() {
@@ -2786,11 +2755,22 @@ function updateGastoFijo(ss, data) {
       ['f-fecha', 'ef-fecha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // SAVE
-    // ═══════════════════════════════════════════════════════════
+    function initCategories(elId) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const allOpts = [
+        ...CATS.Gasto.Supervivencia, 
+        ...CATS.Gasto.Estilo, 
+        ...CATS.Gasto.Deuda, 
+        ...CATS.Ingreso, 
+        ...CATS['Futuro']
+      ].filter((v, i, a) => a.indexOf(v) === i).sort();
+      const current = el.value;
+      el.innerHTML = '<option value="">Seleccionar</option>' + allOpts.map(o => `<option${o === current ? ' selected' : ''}>${o}</option>`).join('');
+    }
+
     function onEfCategoriaChange() {
-      const catVal = document.getElementById('ef-categoria').value;
+      const catVal = document.getElementById('ef-categoria').value || document.getElementById('edit-ef-categoria').value;
       if (!catVal) return;
 
       let foundSub = '';
@@ -2798,13 +2778,17 @@ function updateGastoFijo(ss, data) {
       else if (CATS.Gasto.Estilo.includes(catVal)) foundSub = 'Estilo';
       else if (CATS.Gasto.Deuda.includes(catVal)) foundSub = 'Deuda';
 
+      // Identificar si estamos en modal nuevo o edición
+      const isEdit = document.getElementById('modal-edit-ef').classList.contains('open');
+      const prefix = isEdit ? 'edit-ef-' : 'ef-';
+      
       if (foundSub) {
-        document.getElementById('ef-tipo').value = 'Gasto';
-        document.getElementById('ef-tipogasto').value = foundSub;
-        document.getElementById('ef-tipogasto-group').style.display = 'block';
+        document.getElementById(prefix + 'tipo').value = 'Gasto';
+        document.getElementById(prefix + 'tipogasto').value = foundSub;
+        document.getElementById(prefix + 'tipogasto-group').style.display = 'block';
       } else if (CATS.Ingreso.includes(catVal)) {
-        document.getElementById('ef-tipo').value = 'Entrada';
-        document.getElementById('ef-tipogasto-group').style.display = 'none';
+        document.getElementById(prefix + 'tipo').value = 'Entrada';
+        document.getElementById(prefix + 'tipogasto-group').style.display = 'none';
       }
     }
 
@@ -2953,8 +2937,7 @@ function updateGastoFijo(ss, data) {
       tg.style.display = r.tipomov === 'Gasto' ? 'flex' : 'none';
 
       // Llenar categorías
-      const sub = r.tipogasto === 'Supervivencia' ? 'fijo' : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda') ? 'variable' : '';
-      fillEditCats(r.tipomov || '', sub);
+      fillEditCats(r.tipomov || '', r.tipogasto);
       document.getElementById('edit-categoria').value = r.categoria || '';
 
       openModal('modal-edit');
@@ -3017,15 +3000,11 @@ function updateGastoFijo(ss, data) {
 
     function openEditFromConsulta(el) {
       const src = el.dataset.src;
-      const fecha = el.dataset.fecha;
-      const conc = el.dataset.concepto;
-      const imp = parseFloat(el.dataset.importe);
+      const idx = parseInt(el.dataset.idx);
       if (src === 'efectivo') {
-        const idx = DB.efectivo.findIndex(r => r.fecha === fecha && r.concepto === conc && r.importe === imp);
-        if (idx >= 0) openEditEfectivo(idx);
+        openEditEfectivo(idx);
       } else {
-        const idx = DB.registros.findIndex(r => r.fecha === fecha && r.concepto === conc && r.importe === imp);
-        if (idx >= 0) openEditRegistro(idx);
+        openEditRegistro(idx);
       }
     }
 
@@ -3097,6 +3076,16 @@ function updateGastoFijo(ss, data) {
       });
 
       if (result && result.ok) {
+        // Sincronizar efectivo si era una retirada
+        if (original.categoria === 'Efectivo') {
+          const efIdx = DB.efectivo.findIndex(e => e.fecha === original.fecha && e.concepto === original.concepto && Math.abs(e.importe) === Math.abs(original.importe));
+          if (efIdx >= 0) {
+            const efR = DB.efectivo[efIdx];
+            const efRow = [efR.fecha, efR.concepto, efR.descripcion, efR.importe, efR.tipo, efR.tipogasto, efR.categoria];
+            DB.efectivo.splice(efIdx, 1);
+            apiPost({ action: 'deleteEfectivo', row: efRow });
+          }
+        }
         DB.registros.splice(idx, 1);
         renderAll();
         closeModal('modal-edit');
