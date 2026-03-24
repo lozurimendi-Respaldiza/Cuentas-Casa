@@ -1518,6 +1518,13 @@
               <option>Tarjeta de crédito</option>
             </select>
           </div>
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select class="form-inp" id="f-categoria" onchange="onCategoriaChange()">
+            <option value="">Seleccionar</option>
+          </select>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label class="form-label">Movimiento</label>
             <select class="form-inp" id="f-tipomov" onchange="onTipoMovChange()">
@@ -1527,21 +1534,15 @@
               <option value="Futuro">Futuro (Ahorro)</option>
             </select>
           </div>
-        </div>
-        <div class="form-group" id="tipogasto-group" style="display:none">
-          <label class="form-label">Tipo de gasto</label>
-          <select class="form-inp" id="f-tipogasto" onchange="onTipoGastoChange()">
-            <option value="">Seleccionar</option>
-            <option value="Supervivencia">Supervivencia</option>
-            <option value="Estilo">Estilo de Vida</option>
-            <option value="Deuda">Deuda</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Categoría</label>
-          <select class="form-inp" id="f-categoria">
-            <option value="">Seleccionar tipo primero</option>
-          </select>
+          <div class="form-group" id="tipogasto-group" style="display:none">
+            <label class="form-label">Tipo de gasto</label>
+            <select class="form-inp" id="f-tipogasto" onchange="onTipoGastoChange()">
+              <option value="">Seleccionar</option>
+              <option value="Supervivencia">Supervivencia</option>
+              <option value="Estilo">Estilo de Vida</option>
+              <option value="Deuda">Deuda</option>
+            </select>
+          </div>
         </div>
         <button class="btn-submit" onclick="saveRegistro()">Guardar registro</button>
         <button class="btn-cancel" onclick="closeModal('modal-reg')">Cancelar</button>
@@ -1568,6 +1569,23 @@
       <div class="form-group">
         <label class="form-label">Concepto</label>
         <input class="form-inp" type="text" id="ef-concepto" placeholder="¿En qué se gastó?">
+      </div>
+      <div class="form-group" id="ef-categoria-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-inp" id="ef-categoria" onchange="onEfCategoriaChange()">
+          <option value="">Seleccionar</option>
+        </select>
+      </div>
+      <div id="ef-tipogasto-group" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Tipo de gasto</label>
+          <select class="form-inp" id="ef-tipogasto">
+            <option value="">Seleccionar</option>
+            <option value="Supervivencia">Supervivencia</option>
+            <option value="Estilo">Estilo de Vida</option>
+            <option value="Deuda">Deuda</option>
+          </select>
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Descripción</label>
@@ -1663,7 +1681,7 @@
         <select class="form-inp" id="edit-categoria"></select>
       </div>
       <button class="btn-submit" onclick="saveEditRegistro()">Guardar cambios</button>
-      <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
+      <button class="btn-canceLl" onclick="closeModal('modal-edit')">Cancelar</button>
     </div>
   </div>
 
@@ -1692,6 +1710,19 @@
       <div class="form-group">
         <label class="form-label">Concepto</label>
         <input class="form-inp" type="text" id="edit-ef-concepto">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-inp" id="edit-ef-categoria"></select>
+      </div>
+      <div class="form-group" id="edit-ef-tipogasto-group">
+        <label class="form-label">Tipo de gasto</label>
+        <select class="form-inp" id="edit-ef-tipogasto">
+          <option value="">Seleccionar</option>
+          <option value="Supervivencia">Supervivencia</option>
+          <option value="Estilo">Estilo de Vida</option>
+          <option value="Deuda">Deuda</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Descripción</label>
@@ -1832,7 +1863,7 @@ function getAllData(ss) {
     ['Fecha valor','Importe','Concepto','Entidad',
      'Nombre de producto','Tipo de producto','Tipo de movimiento','Tipo de gasto','Categoria']);
   var efSh = getOrCreateSheet(ss, 'Efectivo',
-    ['Fecha','Concepto','Descripcion','Importe','Tipo']);
+    ['Fecha','Concepto','Descripcion','Importe','Tipo', 'Tipo de gasto', 'Categoria']);
   var gfSh = getOrCreateSheet(ss, 'Gastos Fijos',
     ['Categoria','Concepto','Ultimo cobro','Importe','Frecuencia']);
 
@@ -2157,10 +2188,12 @@ function updateGastoFijo(ss, data) {
     function normalizeEfectivo(arr) {
       return arr.map(r => ({
         fecha: fmtDateIn(r['Fecha'] || r.fecha || ''),
-        concepto: r['Concepto'] || r.concepto || '',
-        descripcion: r['Descripción'] || r.descripcion || '',
-        importe: parseFloat(r['Importe'] ?? r.importe ?? 0),
-        tipo: r['Tipo'] || r.tipo || '',
+        concepto: r.Concepto || r.concepto || '',
+        descripcion: r.Descripcion || r.descripcion || '',
+        importe: parseFloat(r.Importe ?? r.importe ?? 0),
+        tipo: r.Tipo || r.tipo || '',
+        tipogasto: r['Tipo de gasto'] || r.tipogasto || '',
+        categoria: r['Categoría'] || r.categoria || '',
       }));
     }
 
@@ -2463,7 +2496,11 @@ function updateGastoFijo(ss, data) {
         }).join('');
 
       // Poblar desplegable de categorías
-      const cats = [...new Set(DB.registros.map(r => r.categoria).filter(Boolean))].sort();
+      const cats = [...new Set([
+        ...DB.registros.map(r => r.categoria),
+        ...DB.efectivo.map(r => r.categoria)
+      ].filter(Boolean))].sort();
+
       const catSel = document.getElementById('q-cat-sel');
       const curCat = catSel.value;
       catSel.innerHTML = '<option value="">Todas las categorías</option>'
@@ -2490,9 +2527,15 @@ function updateGastoFijo(ss, data) {
       // Construir pool banco + efectivo
       let banco = DB.registros.map(r => ({ ...r, _src: 'banco' }));
       let ef = DB.efectivo.map(r => ({
-        fecha: r.fecha, concepto: r.concepto, categoria: r.descripcion || r.tipo,
-        importe: r.importe, tipomov: r.tipo === 'Entrada' ? 'Ingreso' : 'Gasto',
-        tipogasto: 'Efectivo', entidad: 'Efectivo', _src: 'efectivo'
+        fecha: r.fecha, 
+        concepto: r.concepto, 
+        categoria: r.categoria || r.descripcion || r.tipo,
+        importe: r.tipo === 'Gasto' ? -Math.abs(r.importe) : Math.abs(r.importe), 
+        tipov: r.tipo,
+        tipomov: r.tipo === 'Entrada' ? 'Ingreso' : 'Gasto',
+        tipogasto: r.tipogasto || (r.tipo === 'Entrada' ? 'Ingreso' : 'Efectivo'), 
+        entidad: 'Efectivo', 
+        _src: 'efectivo'
       }));
 
       let results = [];
@@ -2602,10 +2645,84 @@ function updateGastoFijo(ss, data) {
     // MODALS
     // ═══════════════════════════════════════════════════════════
     function openAddModal() {
+      initCategories('f-categoria');
       if (currentTab === 'efectivo') {
+        initCategories('ef-categoria');
+        document.getElementById('ef-categoria-group').style.display = 'flex';
         openModal('modal-ef');
       } else {
         openModal('modal-reg');
+      }
+    }
+
+    function initCategories(selectId) {
+      const cat = document.getElementById(selectId);
+      if (!cat) return;
+      let allCats = [];
+      
+      // Gastos
+      for (let sub in CATS.Gasto) {
+        allCats = allCats.concat(CATS.Gasto[sub]);
+      }
+      // Ingresos
+      allCats = allCats.concat(CATS.Ingreso);
+      // Futuro
+      allCats = allCats.concat(CATS.Futuro);
+      
+      // Sort and unique
+      allCats = [...new Set(allCats)].sort();
+      
+      cat.innerHTML = '<option value="">Seleccionar</option>' + 
+        allCats.map(c => `<option>${c}</option>`).join('');
+    }
+
+    function onCategoriaChange() {
+      const catVal = document.getElementById('f-categoria').value;
+      if (!catVal) return;
+
+      let foundMov = '';
+      let foundSub = '';
+
+      // Buscar en Gastos
+      for (let sub in CATS.Gasto) {
+        if (CATS.Gasto[sub].includes(catVal)) {
+          foundMov = 'Gasto';
+          foundSub = sub;
+          break;
+        }
+      }
+
+      if (!foundMov) {
+        if (CATS.Ingreso.includes(catVal)) foundMov = 'Ingreso';
+        else if (CATS.Futuro.includes(catVal)) foundMov = 'Futuro';
+      }
+
+      document.getElementById('f-tipomov').value = foundMov;
+      onTipoMovChange(); // Refresh sub-group visibility
+
+      if (foundMov === 'Gasto') {
+        document.getElementById('f-tipogasto').value = foundSub;
+      }
+    }
+
+    function onEfCategoriaChange() {
+      const catVal = document.getElementById('ef-categoria').value;
+      if (!catVal) return;
+
+      let foundSub = '';
+      for (let sub in CATS.Gasto) {
+        if (CATS.Gasto[sub].includes(catVal)) {
+          foundSub = sub;
+          break;
+        }
+      }
+      
+      const tipo = document.getElementById('ef-tipo').value;
+      if (tipo === 'Gasto' && foundSub) {
+        document.getElementById('ef-tipogasto-group').style.display = 'block';
+        document.getElementById('ef-tipogasto').value = foundSub;
+      } else {
+        document.getElementById('ef-tipogasto-group').style.display = 'none';
       }
     }
 
@@ -2627,23 +2744,36 @@ function updateGastoFijo(ss, data) {
       const tipo = document.getElementById('f-tipomov').value;
       const tg = document.getElementById('tipogasto-group');
       const cat = document.getElementById('f-categoria');
+      const currentCat = cat.value;
+      
       tg.style.display = tipo === 'Gasto' ? 'flex' : 'none';
-      if (tipo !== 'Gasto') fillCats(tipo);
+      
+      // Solo refiltrar si no hay categoría seleccionada o si la seleccionada no pertenece al nuevo tipo
+      if (tipo !== 'Gasto') {
+        fillCats(tipo, '', currentCat);
+      }
     }
 
     function onTipoGastoChange() {
       const tg = document.getElementById('f-tipogasto').value;
-      fillCats('Gasto', tg);
+      const currentCat = document.getElementById('f-categoria').value;
+      fillCats('Gasto', tg, currentCat);
     }
 
-    function fillCats(tipo, sub = '') {
+    function fillCats(tipo, sub = '', preserveValue = '') {
       const cat = document.getElementById('f-categoria');
       let opts = [];
       if (tipo === 'Gasto' && sub) opts = CATS.Gasto[sub] || [];
-
       else if (tipo === 'Ingreso') opts = CATS.Ingreso;
       else if (tipo === 'Futuro') opts = CATS['Futuro'];
-      cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option>${o}</option>`).join('');
+      
+      // Si estamos en modo "todo" (porque acabamos de abrir el modal), no filtramos
+      if (!tipo && !sub) return;
+
+      cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option${o === preserveValue ? ' selected' : ''}>${o}</option>`).join('');
+      if (preserveValue && !cat.value && opts.includes(preserveValue)) {
+        cat.value = preserveValue;
+      }
     }
 
     function setDate() {
@@ -2698,6 +2828,21 @@ function updateGastoFijo(ss, data) {
       document.getElementById('tipogasto-group').style.display = 'none';
       showToast('✅ Registro guardado', 'success');
       await apiPost({ action: 'addRegistro', row });
+
+      // Si es una retirada de efectivo, añadirlo automáticamente a la cuenta de efectivo
+      if (categoria === 'Efectivo') {
+        const efRow = [fecha, concepto, 'Traslado desde banco', Math.abs(importe), 'Entrada'];
+        DB.efectivo.unshift({ 
+          fecha, 
+          concepto, 
+          descripcion: 'Traslado desde banco', 
+          importe: Math.abs(importe), 
+          tipo: 'Entrada' 
+        });
+        renderAll();
+        showToast('✅ Saldo de efectivo actualizado', 'success');
+        await apiPost({ action: 'addEfectivo', row: efRow });
+      }
     }
 
     async function saveEfectivo() {
@@ -2706,16 +2851,18 @@ function updateGastoFijo(ss, data) {
       const concepto = document.getElementById('ef-concepto').value.trim();
       const desc = document.getElementById('ef-desc').value.trim();
       const importe = parseFloat(document.getElementById('ef-importe').value);
+      const tipogasto = document.getElementById('ef-tipogasto').value;
+      const categoria = document.getElementById('ef-categoria').value;
 
       if (!fecha || !concepto || isNaN(importe) || importe <= 0) {
         showToast('❌ Rellena todos los campos', 'error'); return;
       }
 
-      const row = [fecha, concepto, desc, importe, tipo];
-      DB.efectivo.unshift({ fecha, concepto, descripcion: desc, importe, tipo });
+      const row = [fecha, concepto, desc, importe, tipo, tipogasto, categoria];
+      DB.efectivo.unshift({ fecha, concepto, descripcion: desc, importe, tipo, tipogasto, categoria });
       renderAll();
       closeModal('modal-ef');
-      resetForm(['ef-concepto', 'ef-desc', 'ef-importe']);
+      resetForm(['ef-concepto', 'ef-desc', 'ef-importe', 'ef-categoria', 'ef-tipogasto']);
       showToast('✅ Efectivo guardado', 'success');
       await apiPost({ action: 'addEfectivo', row });
     }
@@ -2798,7 +2945,50 @@ function updateGastoFijo(ss, data) {
       document.getElementById('edit-ef-concepto').value = r.concepto || '';
       document.getElementById('edit-ef-desc').value = r.descripcion || '';
       document.getElementById('edit-ef-importe').value = r.importe || '';
+      
+      initCategories('edit-ef-categoria');
+      document.getElementById('edit-ef-categoria').value = r.categoria || '';
+      document.getElementById('edit-ef-tipogasto').value = r.tipogasto || '';
+      document.getElementById('edit-ef-tipogasto-group').style.display = r.tipo === 'Gasto' ? 'block' : 'none';
+
       openModal('modal-edit-ef');
+    }
+
+    async function saveEditEfectivo() {
+      const idx = parseInt(document.getElementById('edit-ef-idx').value);
+      const original = { ...DB.efectivo[idx] };
+
+      const updated = {
+        fecha: document.getElementById('edit-ef-fecha').value,
+        tipo: document.getElementById('edit-ef-tipo').value,
+        concepto: document.getElementById('edit-ef-concepto').value.trim(),
+        descripcion: document.getElementById('edit-ef-desc').value.trim(),
+        importe: parseFloat(document.getElementById('edit-ef-importe').value),
+        tipogasto: document.getElementById('edit-ef-tipogasto').value,
+        categoria: document.getElementById('edit-ef-categoria').value
+      };
+
+      const originalRow = [original.fecha, original.concepto, original.descripcion, original.importe, original.tipo, original.tipogasto, original.categoria];
+      const updatedRow = [updated.fecha, updated.concepto, updated.descripcion, updated.importe, updated.tipo, updated.tipogasto, updated.categoria];
+
+      DB.efectivo[idx] = updated;
+      renderAll();
+      closeModal('modal-edit-ef');
+      showToast('✅ Cambios guardados', 'success');
+      await apiPost({ action: 'editEfectivo', original: originalRow, updated: updatedRow });
+    }
+
+    async function deleteEfectivo() {
+      if (!confirm('¿Eliminar este movimiento de efectivo?')) return;
+      const idx = parseInt(document.getElementById('edit-ef-idx').value);
+      const r = DB.efectivo[idx];
+      const row = [r.fecha, r.concepto, r.descripcion, r.importe, r.tipo, r.tipogasto, r.categoria];
+
+      DB.efectivo.splice(idx, 1);
+      renderAll();
+      closeModal('modal-edit-ef');
+      showToast('🗑 Movimiento eliminado', 'success');
+      await apiPost({ action: 'deleteEfectivo', row });
     }
 
     function openEditFromConsulta(el) {
@@ -2871,42 +3061,10 @@ function updateGastoFijo(ss, data) {
       }
     }
 
-    async function saveEditEfectivo() {
-      const idx = parseInt(document.getElementById('edit-ef-idx').value);
-      const fecha = document.getElementById('edit-ef-fecha').value;
-      const tipo = document.getElementById('edit-ef-tipo').value;
-      const concepto = document.getElementById('edit-ef-concepto').value.trim();
-      const desc = document.getElementById('edit-ef-desc').value.trim();
-      const importe = parseFloat(document.getElementById('edit-ef-importe').value);
-
-      if (!fecha || !concepto || isNaN(importe) || importe <= 0) {
-        showToast('❌ Rellena todos los campos', 'error'); return;
-      }
-
-      const original = { ...DB.efectivo[idx] };
-      DB.efectivo[idx] = { fecha, concepto, descripcion: desc, importe, tipo };
-
-      renderAll();
-      closeModal('modal-edit-ef');
-      showToast('✅ Efectivo actualizado', 'success');
-
-      await apiPost({
-        action: 'editEfectivo',
-        original: [original.fecha, original.concepto, original.descripcion, original.importe, original.tipo],
-        updated: [fecha, concepto, desc, importe, tipo]
-      });
-    }
-
     async function deleteRegistro() {
       const idx = parseInt(document.getElementById('edit-idx').value);
       if (!confirm('¿Eliminar este registro?')) return;
       const original = { ...DB.registros[idx] };
-
-      // Mostrar qué vamos a enviar (debug)
-      console.log('deleteRegistro sending:', JSON.stringify({
-        action: 'deleteRegistro',
-        row: [original.fecha, original.importe, original.concepto]
-      }));
 
       const result = await apiPost({
         action: 'deleteRegistro',
@@ -2914,39 +3072,20 @@ function updateGastoFijo(ss, data) {
         original.producto, original.tipoprod, original.tipomov, original.tipogasto, original.categoria]
       });
 
-      console.log('deleteRegistro result:', JSON.stringify(result));
-
       if (result && result.ok) {
         DB.registros.splice(idx, 1);
         renderAll();
         closeModal('modal-edit');
         showToast('✅ Registro eliminado en Sheets', 'success');
-      } else if (result && result.error) {
-        showToast('Error: ' + result.error, 'error');
       } else {
-        // Si no hay respuesta clara, eliminar localmente igual
         DB.registros.splice(idx, 1);
         renderAll();
         closeModal('modal-edit');
-        showToast('🗑 Eliminado localmente (verificar Sheets)', '');
+        showToast('🗑 Eliminado localmente', '');
       }
     }
 
-    async function deleteEfectivo() {
-      const idx = parseInt(document.getElementById('edit-ef-idx').value);
-      if (!confirm('¿Eliminar este movimiento?')) return;
-      const original = DB.efectivo[idx];
-      DB.efectivo.splice(idx, 1);
-      renderAll();
-      closeModal('modal-edit-ef');
-      showToast('🗑 Movimiento eliminado', '');
-      await apiPost({
-        action: 'deleteEfectivo',
-        row: [original.fecha, original.concepto, original.descripcion, original.importe, original.tipo]
-      });
-    }
 
-    // ═══════════════════════════════════════════════════════════
     // INIT
     // ═══════════════════════════════════════════════════════════
     const savedURL = localStorage.getItem('cc_script_url');
