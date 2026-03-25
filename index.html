@@ -1180,7 +1180,7 @@
 
   <script>
     // Auto-actualización: registrar service worker que fuerza reload en nueva versión
-    const APP_VERSION = '202603230147';
+    const APP_VERSION = '202603250400';
     if ('serviceWorker' in navigator) {
       // Desregistrar cualquier SW antiguo para forzar recarga limpia
       navigator.serviceWorker.getRegistrations().then(regs => {
@@ -1239,6 +1239,16 @@
         <div class="form-group">
           <label class="form-label">Categoría</label>
           <select class="form-inp" id="f-categoria" onchange="onCategoriaChange()"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Producto</label>
+          <input class="form-inp" type="text" id="f-producto" placeholder="Nombre banco">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo Producto</label>
+          <input class="form-inp" type="text" id="f-tipoprod" placeholder="Cuenta/Tarjeta">
         </div>
       </div>
       <div class="form-row">
@@ -1305,13 +1315,33 @@
           <select class="form-inp" id="edit-categoria"></select>
         </div>
       </div>
-      <div id="edit-tipogasto-group" style="display:none" class="form-group">
-        <label class="form-label">Tipo de gasto</label>
-        <select class="form-inp" id="edit-tipogasto">
-          <option value="Supervivencia">Supervivencia</option>
-          <option value="Estilo">Estilo</option>
-          <option value="Deuda">Deuda</option>
-        </select>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Entidad</label>
+          <select class="form-inp" id="edit-entidad">
+            <option value="">Seleccionar</option>
+            <option>Kutxabank</option>
+            <option>Laboral Kutxa</option>
+          </select>
+        </div>
+        <div class="form-group" id="edit-tipogasto-group" style="display:none">
+          <label class="form-label">Tipo de gasto</label>
+          <select class="form-inp" id="edit-tipogasto">
+            <option value="Supervivencia">Supervivencia</option>
+            <option value="Estilo">Estilo</option>
+            <option value="Deuda">Deuda</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Producto</label>
+          <input class="form-inp" type="text" id="edit-producto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo Producto</label>
+          <input class="form-inp" type="text" id="edit-tipoprod">
+        </div>
       </div>
       <button class="btn-submit" onclick="saveEditRegistro()">Guardar cambios</button>
       <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
@@ -1603,36 +1633,117 @@
         <span class="icon">📅</span><span class="label">Fijos</span>
       </div>
       <div class="nav-item" onclick="switchTab('consultas')" id="nav-consultas">
-        <div class="nav-item" data-action="switchTab" data-tab-id="consultas" id="nav-consultas">
-          <span class="icon">🔍</span><span class="label">Consultas</span>
-        </div>
+        <span class="icon">🔍</span><span class="label">Consultas</span>
+      </div>
     </nav>
   </div>
 
-  <!-- FAB & ACTIONS -->
-  <div class="fab-container">
-    <select class="form-inp" id="edit-ef-categoria" onchange="onEfCategoriaChange()"></select>
+  <!-- MODAL NUEVO EFECTIVO -->
+  <div class="modal-overlay" id="modal-ef">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Añadir Efectivo</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-inp" type="date" id="ef-fecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-inp" id="ef-tipo">
+            <option value="Gasto">Gasto</option>
+            <option value="Entrada">Entrada (Ingreso)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Concepto</label>
+        <input class="form-inp" type="text" id="ef-concepto" placeholder="Ej: Panadería">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input class="form-inp" type="text" id="ef-desc" placeholder="Opcional...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Importe (€)</label>
+          <input class="form-inp" type="number" id="ef-importe" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select class="form-inp" id="ef-categoria" onchange="onEfCategoriaChange()"></select>
+        </div>
+      </div>
+      <div class="form-group" id="ef-tipogasto-group" style="display:none">
+        <label class="form-label">Tipo de gasto</label>
+        <select class="form-inp" id="ef-tipogasto">
+          <option value="">Seleccionar</option>
+          <option value="Supervivencia">Supervivencia</option>
+          <option value="Estilo">Estilo de Vida</option>
+          <option value="Deuda">Deuda</option>
+        </select>
+      </div>
+      <button class="btn-submit" onclick="saveEfectivo()">Guardar efectivo</button>
+      <button class="btn-cancel" onclick="closeModal('modal-ef')">Cancelar</button>
+    </div>
   </div>
-  <div class="form-group" id="edit-ef-tipogasto-group">
-    <label class="form-label">Tipo de gasto</label>
-    <select class="form-inp" id="edit-ef-tipogasto">
-      <option value="">Seleccionar</option>
-      <option value="Supervivencia">Supervivencia</option>
-      <option value="Estilo">Estilo de Vida</option>
-      <option value="Deuda">Deuda</option>
-    </select>
+
+  <!-- MODAL EDITAR EFECTIVO -->
+  <div class="modal-overlay" id="modal-edit-ef">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div class="modal-title" style="margin:0">Modificar Efectivo</div>
+        <button onclick="deleteEfectivo()"
+          style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:7px 14px;font-size:13px;cursor:pointer">🗑</button>
+      </div>
+      <input type="hidden" id="edit-ef-idx">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-inp" type="date" id="edit-ef-fecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-inp" id="edit-ef-tipo">
+            <option value="Gasto">Gasto</option>
+            <option value="Entrada">Entrada</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Concepto</label>
+        <input class="form-inp" type="text" id="edit-ef-concepto">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <select class="form-inp" id="edit-ef-categoria" onchange="onEfCategoriaChange()"></select>
+      </div>
+      <div class="form-group" id="edit-ef-tipogasto-group">
+        <label class="form-label">Tipo de gasto</label>
+        <select class="form-inp" id="edit-ef-tipogasto">
+          <option value="">Seleccionar</option>
+          <option value="Supervivencia">Supervivencia</option>
+          <option value="Estilo">Estilo de Vida</option>
+          <option value="Deuda">Deuda</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <input class="form-inp" type="text" id="edit-ef-desc">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Importe (€)</label>
+        <input class="form-inp" type="number" id="edit-ef-importe" step="0.01" min="0">
+      </div>
+      <button class="btn-submit" onclick="saveEditEfectivo()">Guardar cambios</button>
+      <button class="btn-cancel" onclick="closeModal('modal-edit-ef')">Cancelar</button>
+    </div>
   </div>
-  <div class="form-group">
-    <label class="form-label">Descripción</label>
-    <input class="form-inp" type="text" id="edit-ef-desc">
-  </div>
-  <div class="form-group">
-    <label class="form-label">Importe (€)</label>
-    <input class="form-inp" type="number" id="edit-ef-importe" step="0.01" min="0">
-  </div>
-  <button class="btn-submit" onclick="saveEditEfectivo()">Guardar cambios</button>
-  <button class="btn-cancel" onclick="closeModal('modal-edit-ef')">Cancelar</button>
-  </div>
+
+  <!-- FAB ARRIBA -->
+  <div class="fab-container" id="fab">
+    <button class="fab" onclick="openAddModal()">+</button>
   </div>
 
   <!-- TOAST -->
