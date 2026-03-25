@@ -1263,7 +1263,7 @@
           </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
-        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250215</div>
+        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250320</div>
       </div>
 
       <!-- Saldo total histórico -->
@@ -1502,7 +1502,7 @@
   <div class="modal-overlay" id="modal-reg">
     <div class="modal">
       <div class="modal-handle"></div>
-      <div class="modal-title" id="modal-title">Modificar o Eliminar Registro</div>
+      <div class="modal-title" id="modal-title">Añadir Nuevo Registro</div>
       <div id="modal-form-reg">
         <div class="form-row">
           <div class="form-group">
@@ -2559,9 +2559,13 @@ function updateGastoFijo(ss, data) {
       }
 
       function renderConsultas() {
-        const q = (document.getElementById('q-search').value || '').toLowerCase();
-        const desde = document.getElementById('q-fecha-desde').value;
-        const hasta = document.getElementById('q-fecha-hasta').value;
+        const qEl = document.getElementById('q-search');
+        const dEl = document.getElementById('q-fecha-desde');
+        const hEl = document.getElementById('q-fecha-hasta');
+
+        const q = (qEl ? qEl.value : '').toLowerCase();
+        const desde = dEl ? dEl.value : '';
+        const hasta = hEl ? hEl.value : '';
 
         // Construir pool banco + efectivo
         let banco = DB.registros.map((r, i) => ({ ...r, _src: 'banco', _idx: i }));
@@ -2671,18 +2675,34 @@ function updateGastoFijo(ss, data) {
         document.getElementById('fab').style.display = ['inicio', 'registros', 'efectivo'].includes(tab) ? 'flex' : 'none';
       }
 
-      function handleTxClick(el, src, idx) {
-        if (!el) return;
-        document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
-        el.classList.add('selected');
+      function handleTxClick(el, src, idx, e) {
+        try {
+          if (!el) return;
+          console.log('--- handleTxClick START ---');
+          console.log('Source:', src, 'Index:', idx);
 
-        // Diagnostic: check if idx is valid
-        const index = parseInt(idx);
-        selectedTx = { src, idx: index };
+          document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
+          el.classList.add('selected');
 
-        console.log('Clicked TX:', src, index);
-        openSelectedEdit();
-        if (window.event) window.event.stopPropagation();
+          const index = parseInt(idx);
+          if (isNaN(index)) {
+            console.error('Invalid index:', idx);
+            showToast('❌ Error: Índice de registro inválido', 'error');
+            return;
+          }
+
+          selectedTx = { src, idx: index };
+          console.log('Setting selectedTx:', JSON.stringify(selectedTx));
+
+          // Small delay to ensure selection is visible before modal opens (optional)
+          openSelectedEdit();
+
+          if (e && e.stopPropagation) e.stopPropagation();
+          else if (window.event) window.event.stopPropagation();
+        } catch (err) {
+          console.error('Crash in handleTxClick:', err);
+          showToast('❌ Error al procesar clic: ' + err.message, 'error');
+        }
       }
 
       function deselectTx() {
@@ -2703,29 +2723,36 @@ function updateGastoFijo(ss, data) {
       }
 
       function openSelectedEdit() {
+        console.log('--- openSelectedEdit START ---');
         if (!selectedTx) {
-          // No alert needed for simple deselection, but we want to know if it fails
+          console.warn('openSelectedEdit called but selectedTx is null');
           return;
         }
 
         const { src, idx } = selectedTx;
+        console.log('Attempting to open edit for:', src, idx);
+
         try {
           if (src === 'efectivo') {
             if (idx === null || idx === undefined || idx < 0 || !DB.efectivo[idx]) {
-              showToast('⚠ Registro de efectivo no encontrado (idx: ' + idx + ')', 'error');
+              const msg = '⚠ Registro de efectivo no encontrado (idx: ' + idx + ')';
+              console.error(msg);
+              showToast(msg, 'error');
               return;
             }
             openEditEfectivo(idx);
           } else {
             if (idx === null || idx === undefined || idx < 0 || !DB.registros[idx]) {
-              showToast('⚠ Registro bancario no encontrado (idx: ' + idx + ')', 'error');
+              const msg = '⚠ Registro bancario no encontrado (idx: ' + idx + ')';
+              console.error(msg);
+              showToast(msg, 'error');
               return;
             }
             openEditRegistro(idx);
           }
         } catch (err) {
-          console.error('Error in openSelectedEdit:', err);
-          showToast('❌ Error: ' + err.message, 'error');
+          console.error('Error in openSelectedEdit branch:', err);
+          showToast('❌ Error al abrir editor: ' + err.message, 'error');
         }
       }
 
