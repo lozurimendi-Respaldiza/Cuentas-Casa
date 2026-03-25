@@ -555,34 +555,7 @@
       }
     }
 
-    .btn-edit-action {
-      background: var(--purple);
-      color: white;
-      padding: 12px 24px;
-      border-radius: 30px;
-      font-weight: 600;
-      font-size: 14px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      cursor: pointer;
-      display: none;
-      border: none;
-      align-items: center;
-      gap: 8px;
-      animation: slideUp 0.3s ease;
-      white-space: nowrap;
-    }
-
-    @keyframes slideUp {
-      from {
-        transform: translateY(10px);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
+    /* Sección de botón de edición eliminada */
 
     .tx:first-child {
       border-radius: var(--r) var(--r) 0 0
@@ -1290,7 +1263,7 @@
           </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
-        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603230200</div>
+        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250130</div>
       </div>
 
       <!-- Saldo total histórico -->
@@ -1522,9 +1495,6 @@
 
   <!-- FAB & ACTIONS -->
   <div class="fab-container">
-    <button id="btn-edit-action" class="btn-edit-action" onclick="openSelectedEdit()">
-      <span>✏️</span> Modificar o Eliminar
-    </button>
     <button class="fab" id="fab" onclick="openAddModal()">+</button>
   </div>
 
@@ -2703,21 +2673,16 @@ function updateGastoFijo(ss, data) {
       }
 
       function handleTxClick(el, src, idx) {
-        if (el.classList.contains('selected')) {
-          deselectTx();
-          return;
-        }
         document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
         el.classList.add('selected');
         selectedTx = { src, idx };
-        document.getElementById('btn-edit-action').style.display = 'flex';
+        openSelectedEdit();
         if (window.event) window.event.stopPropagation();
       }
 
       function deselectTx() {
         document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
         selectedTx = null;
-        document.getElementById('btn-edit-action').style.display = 'none';
       }
 
       function openAddModal() {
@@ -2826,6 +2791,7 @@ function updateGastoFijo(ss, data) {
       function closeModal(id) {
         document.getElementById(id).classList.remove('open');
         document.body.style.overflow = '';
+        deselectTx();
       }
 
       document.querySelectorAll('.modal-overlay').forEach(o => {
