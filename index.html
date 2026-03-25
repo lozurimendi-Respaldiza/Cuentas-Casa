@@ -535,29 +535,41 @@
 
     .fab-container {
       position: fixed;
-      bottom: 85px;
-      right: 20px;
+      bottom: calc(var(--nav) + 20px);
+      right: calc(50% - 220px);
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: 10px;
-      z-index: 1001;
+      gap: 15px;
+      z-index: 2500;
+      pointer-events: none;
+    }
+
+    .fab-container>* {
+      pointer-events: auto;
+    }
+
+    @media(max-width:480px) {
+      .fab-container {
+        right: 20px;
+      }
     }
 
     .btn-edit-action {
       background: var(--purple);
       color: white;
-      padding: 12px 20px;
+      padding: 12px 24px;
       border-radius: 30px;
       font-weight: 600;
       font-size: 14px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       cursor: pointer;
       display: none;
       border: none;
       align-items: center;
       gap: 8px;
       animation: slideUp 0.3s ease;
+      white-space: nowrap;
     }
 
     @keyframes slideUp {
@@ -663,25 +675,21 @@
       color: var(--text3)
     }
 
-    /* FAB */
     .fab {
-      position: fixed;
-      bottom: calc(var(--nav) + 16px);
-      right: calc(50% - 220px);
-      width: 52px;
-      height: 52px;
+      width: 56px;
+      height: 56px;
       background: var(--accent);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      font-size: 28px;
       color: #0d1117;
       cursor: pointer;
       box-shadow: 0 4px 20px rgba(88, 166, 255, .35);
-      z-index: 99;
       transition: all .2s;
-      font-weight: 300
+      font-weight: 300;
+      border: none;
     }
 
     .fab:hover {
@@ -1282,7 +1290,7 @@
           </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
-        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603230147</div>
+        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603230200</div>
       </div>
 
       <!-- Saldo total histórico -->
@@ -1514,10 +1522,10 @@
 
   <!-- FAB & ACTIONS -->
   <div class="fab-container">
-    <button id="btn-edit-action" class="btn-edit-action" onclick="event.stopPropagation(); openSelectedEdit()">
+    <button id="btn-edit-action" class="btn-edit-action" onclick="openSelectedEdit()">
       <span>✏️</span> Modificar o Eliminar
     </button>
-    <div class="fab" id="fab" onclick="openAddModal()">+</div>
+    <button class="fab" id="fab" onclick="openAddModal()">+</button>
   </div>
 
   <!-- MODAL NUEVO REGISTRO -->
@@ -2762,24 +2770,23 @@ function updateGastoFijo(ss, data) {
       // ═══════════════════════════════════════════════════════════
 
       function initCategories(selectId) {
-        const cat = document.getElementById(selectId);
-        if (!cat) return;
-        let allCats = [];
+        const el = document.getElementById(selectId);
+        if (!el) return;
 
+        let allOpts = [];
         // Gastos
         for (let sub in CATS.Gasto) {
-          allCats = allCats.concat(CATS.Gasto[sub]);
+          allOpts = allOpts.concat(CATS.Gasto[sub]);
         }
-        // Ingresos
-        allCats = allCats.concat(CATS.Ingreso);
-        // Futuro
-        allCats = allCats.concat(CATS.Futuro);
+        // Ingresos, Futuro
+        allOpts = [...allOpts, ...CATS.Ingreso, ...CATS.Futuro];
 
-        // Sort and unique
-        allCats = [...new Set(allCats)].sort();
+        // Únicos y ordenados
+        allOpts = [...new Set(allOpts)].sort();
 
-        cat.innerHTML = '<option value="">Seleccionar</option>' +
-          allCats.map(c => `<option>${c}</option>`).join('');
+        const current = el.value;
+        el.innerHTML = '<option value="">Seleccionar</option>' +
+          allOpts.map(o => `<option ${o === current ? 'selected' : ''}>${o}</option>`).join('');
       }
 
       function onCategoriaChange() {
@@ -2857,19 +2864,7 @@ function updateGastoFijo(ss, data) {
         ['f-fecha', 'ef-fecha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
       }
 
-      function initCategories(elId) {
-        const el = document.getElementById(elId);
-        if (!el) return;
-        const allOpts = [
-          ...CATS.Gasto.Supervivencia,
-          ...CATS.Gasto.Estilo,
-          ...CATS.Gasto.Deuda,
-          ...CATS.Ingreso,
-          ...CATS['Futuro']
-        ].filter((v, i, a) => a.indexOf(v) === i).sort();
-        const current = el.value;
-        el.innerHTML = '<option value="">Seleccionar</option>' + allOpts.map(o => `<option${o === current ? ' selected' : ''}>${o}</option>`).join('');
-      }
+      // Función eliminada (duplicada)
 
       function onEfCategoriaChange() {
         const catVal = document.getElementById('ef-categoria').value || document.getElementById('edit-ef-categoria').value;
@@ -3063,18 +3058,7 @@ function updateGastoFijo(ss, data) {
         openModal('modal-edit-ef');
       }
 
-      async function deleteEfectivo() {
-        const idx = parseInt(document.getElementById('edit-ef-idx').value);
-        if (!confirm('¿Eliminar este registro de efectivo?')) return;
-
-        const row = DB.efectivo[idx];
-        DB.efectivo.splice(idx, 1);
-        closeModal('modal-edit-ef');
-        renderEfectivo();
-        deselectTx();
-        showToast('✅ Registro eliminado');
-        await apiPost({ action: 'deleteEfectivo', row });
-      }
+      // Función unificada abajo
 
       async function saveEditEfectivo() {
         const idx = parseInt(document.getElementById('edit-ef-idx').value);
@@ -3102,14 +3086,21 @@ function updateGastoFijo(ss, data) {
 
       async function deleteEfectivo() {
         if (!confirm('¿Eliminar este movimiento de efectivo?')) return;
-        const idx = parseInt(document.getElementById('edit-ef-idx').value);
+        const idxStr = document.getElementById('edit-ef-idx').value;
+        const idx = parseInt(idxStr);
+        if (isNaN(idx) || idx < 0 || !DB.efectivo[idx]) {
+          showToast('❌ Error al localizar el registro para eliminar', 'error');
+          return;
+        }
+
         const r = DB.efectivo[idx];
         const row = [r.fecha, r.concepto, r.descripcion, r.importe, r.tipo, r.tipogasto, r.categoria];
 
         DB.efectivo.splice(idx, 1);
         renderAll();
         closeModal('modal-edit-ef');
-        showToast('🗑 Movimiento eliminado', 'success');
+        deselectTx();
+        showToast('🗑 Movimiento de efectivo eliminado', 'success');
         await apiPost({ action: 'deleteEfectivo', row });
       }
 
