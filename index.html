@@ -524,6 +524,13 @@
       background: var(--bg3)
     }
 
+    .tx:active { background: var(--bg3); }
+    .tx.selected { background: var(--primary-bg) !important; border-left: 4px solid var(--primary); }
+    
+    .fab-container { position: fixed; bottom: 85px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 999; }
+    .btn-edit-action { background: var(--secondary); color: white; padding: 12px 20px; border-radius: 30px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; display: none; border: none; align-items: center; gap: 8px; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
     .tx:first-child {
       border-radius: var(--r) var(--r) 0 0
     }
@@ -1464,8 +1471,13 @@
     </nav>
   </div>
 
-  <!-- FAB -->
-  <div class="fab" id="fab" onclick="openAddModal()" style="display:none">+</div>
+  <!-- FAB & ACTIONS -->
+  <div class="fab-container">
+    <button id="btn-edit-action" class="btn-edit-action" onclick="openSelectedEdit()">
+      ✏️ Modificar o Eliminar
+    </button>
+    <div class="fab" id="fab" onclick="openAddModal()">+</div>
+  </div>
 
   <!-- MODAL NUEVO REGISTRO -->
   <div class="modal-overlay" id="modal-reg">
@@ -1792,6 +1804,7 @@
     let SCRIPT_URL = '';
     let DEMO_MODE = false;
     let currentTab = 'inicio';
+    let selectedTx = null;
     let regFilter = 'Todos';
     // qFilter eliminado — usar qTipo/qMes/qCat
     let pendingQueue = [];
@@ -2396,10 +2409,8 @@ function updateGastoFijo(ss, data) {
         const badgeTxt = r.tipogasto || r.tipomov;
         // Calcular índice real en DB para edición
         const dbIdx = (r._idx !== undefined) ? r._idx : (srcType === 'efectivo' ? DB.efectivo.indexOf(r) : DB.registros.indexOf(r));
-        const clickFn = srcType === 'efectivo'
-          ? `openEditEfectivo(${dbIdx})`
-          : `openEditRegistro(${dbIdx})`;
-        return `<div class="tx" onclick="${clickFn}" style="cursor:pointer">
+        
+        return `<div class="tx" onclick="handleTxClick(this, '${srcType}', ${dbIdx})" style="cursor:pointer">
       <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
       <div class="tx-info">
         <div class="tx-name">${r.concepto || 'Sin concepto'}</div>
@@ -2424,27 +2435,30 @@ function updateGastoFijo(ss, data) {
     function renderEfectivo() {
       const gastos = DB.efectivo.filter(r => r.tipo === 'Gasto').sort((a, b) => b.importe - a.importe).slice(0, 5);
       document.getElementById('ef-top-list').innerHTML = gastos.length
-        ? gastos.map(r => `<div class="tx">
-        <div class="tx-icon" style="background:var(--red-bg)">💸</div>
-        <div class="tx-info"><div class="tx-name">${r.concepto}</div><div class="tx-meta">${fmtDate(r.fecha)}${r.descripcion ? ' · ' + r.descripcion : ''}</div></div>
-        <div class="tx-amount neg">${fmt(r.importe)}</div>
-      </div>`).join('')
-        : '<div class="empty-state"><p>Sin gastos en efectivo</p></div>';
+        ? gastos.map(r => {
+          const dbIdx = DB.efectivo.indexOf(r);
+          return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx})" style="cursor:pointer">
+            <div class="tx-icon" style="background:var(--red-bg)">💸</div>
+            <div class="tx-info"><div class="tx-name">${r.concepto}</div><div class="tx-meta">${fmtDate(r.fecha)}${r.descripcion ? ' · ' + r.descripcion : ''}</div></div>
+            <div class="tx-amount neg">${fmt(r.importe)}</div>
+          </div>`;
+        }).join('')
+: '<div class="empty-state"><p>Sin gastos en efectivo</p></div>';
 
       const todos = [...DB.efectivo].sort((a, b) => b.fecha.localeCompare(a.fecha));
       document.getElementById('ef-list').innerHTML = todos.length
-        ? todos.map(r => {
+        ? todos.map((r, i) => {
           const dbIdx = DB.efectivo.indexOf(r);
-          return `<div class="tx" onclick="openEditEfectivo(${dbIdx})" style="cursor:pointer">
-          <div class="tx-icon" style="background:var(--${r.tipo === 'Entrada' ? 'green' : 'red'}-bg)">${r.tipo === 'Entrada' ? '💵' : '💸'}</div>
-          <div class="tx-info"><div class="tx-name">${r.concepto}</div><div class="tx-meta">${fmtDate(r.fecha)}${r.descripcion ? ' · ' + r.descripcion : ''}</div></div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="tx-amount ${r.tipo === 'Entrada' ? 'pos' : 'neg'}">${r.tipo === 'Entrada' ? '+' : ''}${fmt(r.importe)}</div>
-            <span style="color:var(--text3);font-size:16px">›</span>
-          </div>
-        </div>`;
+          return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx})" style="cursor:pointer">
+            <div class="tx-icon" style="background:var(--${r.tipo === 'Gasto' ? 'red' : 'green'}-bg)">💵</div>
+            <div class="tx-info">
+              <div class="tx-name">${r.concepto}</div>
+              <div class="tx-meta">${fmtDate(r.fecha)} · ${r.categoria || 'Sin cat.'}</div>
+            </div>
+            <div class="tx-amount ${r.tipo === 'Gasto' ? 'neg' : 'pos'}">${r.tipo === 'Entrada' ? '+' : ''}${fmt(r.importe)}</div>
+          </div>`;
         }).join('')
-        : '<div class="empty-state"><p>Sin movimientos de efectivo</p></div>';
+        : '<div class="empty-state"><p>No hay movimientos de efectivo</p></div>';
     }
 
     function renderGastosFijos() {
@@ -2605,23 +2619,23 @@ function updateGastoFijo(ss, data) {
           const tipoBadge = r.tipogasto === 'Supervivencia'
             ? '<span class="badge fijo" style="margin-left:4px">fijo</span>'
             : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda')
-              ? '<span class="badge variable" style="margin-left:4px">var</span>'
-              : '';
-          // Render item
-          return `<div class="tx" onclick="openEditFromConsulta(this)" data-src="${r._src || 'banco'}" data-idx="${r._idx}" style="cursor:pointer">
-        <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : 'red'}-bg)">${icon}</div>
-        <div class="tx-info">
-          <div class="tx-name">${r.concepto || '-'}</div>
-          <div class="tx-meta">${fmtDate(r.fecha)} · ${r.categoria || ''} ${tipoBadge}${srcBadge}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="tx-amount ${cls}">${fmt(r.importe)}</div>
-          <span style="color:var(--text3);font-size:16px">›</span>
-        </div>
-      </div>`;
+              ? '<span class="badge variable" style="margin-left:4px">variable</span>'
+              : r.tipomov === 'Ingreso' ? '<span class="badge ingreso" style="margin-left:4px">ingreso</span>' : '';
+
+          return `<div class="tx" onclick="handleTxClick(this, '${r._src || 'banco'}', ${r._idx})" style="cursor:pointer">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
+              <div class="tx-info">
+                <div class="tx-name">${r.concepto || 'Sin concepto'}</div>
+                <div class="tx-meta">${fmtDate(r.fecha)} · ${r.categoria || 'Sin cat.'} ${srcBadge}${tipoBadge}</div>
+              </div>
+            </div>
+            <div class="tx-amount ${cls}">${r.tipomov === 'Ingreso' ? '+' : ''}${fmt(r.importe)}</div>
+          </div>`;
         }).join('')
         + `</div>`
-        + (results.length > 100 ? `<div style="text-align:center;padding:12px;font-size:12px;color:var(--text3)">Mostrando 100 de ${results.length} resultados — añade más filtros para acotar</div>` : '');
+        + (results.length > 100 ? `<div style="text-align:center;padding:12px;font-size:12px;color:var(--text3)">Mostrando 100 de ${results.length} resultados</div>` : '');
+
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -2629,11 +2643,43 @@ function updateGastoFijo(ss, data) {
     // ═══════════════════════════════════════════════════════════
     function switchTab(tab) {
       currentTab = tab;
+      deselectTx();
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById('screen-' + tab).classList.add('active');
       document.getElementById('nav-' + tab).classList.add('active');
       document.getElementById('fab').style.display = ['inicio', 'registros', 'efectivo'].includes(tab) ? 'flex' : 'none';
+    }
+
+    function handleTxClick(el, src, idx) {
+      if (el.classList.contains('selected')) {
+        deselectTx();
+        return;
+      }
+      document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedTx = { src, idx };
+      document.getElementById('btn-edit-action').style.display = 'flex';
+      if (window.event) window.event.stopPropagation();
+    }
+
+    function deselectTx() {
+      document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
+      selectedTx = null;
+      document.getElementById('btn-edit-action').style.display = 'none';
+    }
+
+    function openAddModal() {
+      deselectTx();
+      if (currentTab === 'efectivo') openModal('modal-ef');
+      else openModal('modal-reg');
+    }
+
+    function openSelectedEdit() {
+      if (!selectedTx) return;
+      if (selectedTx.src === 'efectivo') openEditEfectivo(selectedTx.idx);
+      else openEditRegistro(selectedTx.idx);
+      deselectTx();
     }
 
     function setRegFilter(f, el) {
@@ -2998,15 +3044,6 @@ function updateGastoFijo(ss, data) {
       await apiPost({ action: 'deleteEfectivo', row });
     }
 
-    function openEditFromConsulta(el) {
-      const src = el.dataset.src;
-      const idx = parseInt(el.dataset.idx);
-      if (src === 'efectivo') {
-        openEditEfectivo(idx);
-      } else {
-        openEditRegistro(idx);
-      }
-    }
 
     async function saveEditRegistro() {
       const idx = parseInt(document.getElementById('edit-idx').value);
