@@ -58,7 +58,8 @@
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       -webkit-font-smoothing: antialiased
     }
 
@@ -531,6 +532,7 @@
     .tx.selected {
       background: rgba(88, 166, 255, 0.15) !important;
       border-left: 4px solid var(--accent) !important;
+      box-shadow: inset 4px 0 0 -4px var(--accent);
     }
 
     .fab-container {
@@ -693,7 +695,9 @@
     }
 
     .modal-overlay.open {
-      display: flex
+      display: flex !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
 
     .modal {
@@ -701,11 +705,12 @@
       border-radius: var(--rl) var(--rl) 0 0;
       width: 100%;
       max-width: 480px;
-      max-height: 92dvh;
+      max-height: 90vh;
       overflow-y: auto;
-      padding: 24px;
+      padding: 24px 24px 40px;
       border: 1px solid var(--border2);
-      border-bottom: none
+      border-bottom: none;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
     }
 
     .modal-handle {
@@ -1263,7 +1268,7 @@
           </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
-        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250320</div>
+        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250345</div>
       </div>
 
       <!-- Saldo total histórico -->
@@ -2676,32 +2681,32 @@ function updateGastoFijo(ss, data) {
       }
 
       function handleTxClick(el, src, idx, e) {
+        if (e) e.stopPropagation();
+
         try {
           if (!el) return;
-          console.log('--- handleTxClick START ---');
-          console.log('Source:', src, 'Index:', idx);
+          console.log('TX_CLICK:', src, idx);
 
+          // Remover selección previa
           document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
+
+          // Marcar actual
           el.classList.add('selected');
 
           const index = parseInt(idx);
           if (isNaN(index)) {
-            alert('❌ ERROR: Índice inválido (' + idx + ')');
+            showToast('❌ Error: Índice no válido', 'error');
             return;
           }
 
           selectedTx = { src, idx: index };
-          console.log('SelectedTx:', JSON.stringify(selectedTx));
 
-          if (e) e.stopPropagation();
-          else if (window.event) window.event.stopPropagation();
-
-          // Debugging alert
-          alert('DEBUG: Clic en ' + src + ' #' + index);
-
+          // Intentar abrir el formulario directamente
           openSelectedEdit();
+
         } catch (err) {
-          alert('FATAL ERROR handleTxClick: ' + err.message);
+          console.error(err);
+          showToast('❌ Error al abrir: ' + err.message, 'error');
         }
       }
 
@@ -2723,31 +2728,28 @@ function updateGastoFijo(ss, data) {
       }
 
       function openSelectedEdit() {
-        console.log('--- openSelectedEdit START ---');
-        if (!selectedTx) {
-          console.warn('openSelectedEdit called but selectedTx is null');
-          return;
-        }
+        if (!selectedTx) return;
 
         const { src, idx } = selectedTx;
-        console.log('Attempting to open edit for:', src, idx);
+        console.log('OPEN_EDIT:', src, idx);
 
         try {
           if (src === 'efectivo') {
-            if (idx === null || idx === undefined || idx < 0 || !DB.efectivo[idx]) {
-              alert('⚠ Registro de EFECTIVO no encontrado.\nÍndice: ' + idx + '\nTotal en DB: ' + DB.efectivo.length);
+            if (!DB.efectivo[idx]) {
+              showToast('❌ No se encuentra el registro en efectivo', 'error');
               return;
             }
             openEditEfectivo(idx);
           } else {
-            if (idx === null || idx === undefined || idx < 0 || !DB.registros[idx]) {
-              alert('⚠ Registro BANCARIO no encontrado.\nÍndice: ' + idx + '\nTotal en DB: ' + DB.registros.length);
+            if (!DB.registros[idx]) {
+              showToast('❌ No se encuentra el registro bancario', 'error');
               return;
             }
             openEditRegistro(idx);
           }
         } catch (err) {
-          alert('FATAL ERROR openSelectedEdit: ' + err.message);
+          console.error(err);
+          showToast('❌ Error en openSelectedEdit: ' + err.message, 'error');
         }
       }
 
@@ -2812,17 +2814,18 @@ function updateGastoFijo(ss, data) {
       }
 
       function openModal(id) {
-        console.log('Opening modal:', id);
+        console.log('MODAL_OPEN:', id);
         const el = document.getElementById(id);
         if (!el) {
-          console.error('Modal element not found:', id);
-          showToast('❌ Error: El formulario ' + id + ' no existe en el HTML', 'error');
+          showToast('❌ Error: f-' + id + ' no encontrado', 'error');
           return;
         }
+
+        // Asegurar que otros modales se cierren
+        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+
         el.classList.add('open');
         document.body.style.overflow = 'hidden';
-        console.log('Modal', id, 'should be visible now');
-        // showToast('📂 Formulario abierto', 'success'); 
       }
 
       function closeModal(id) {
