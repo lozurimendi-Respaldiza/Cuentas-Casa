@@ -1207,7 +1207,117 @@
 
 <body>
 
-  <!-- SETUP SCREEN -->
+  <!-- MODALES AL PRINCIPIO PARA EVITAR INTERFERENCIAS -->
+  <!-- MODAL NUEVO REGISTRO -->
+  <div class="modal-overlay" id="modal-reg">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Añadir Nuevo Registro</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-inp" type="date" id="f-fecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Importe (€)</label>
+          <input class="form-inp" type="number" id="f-importe" placeholder="0.00" step="0.01">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Concepto</label>
+        <input class="form-inp" type="text" id="f-concepto" placeholder="Descripción">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Entidad</label>
+          <select class="form-inp" id="f-entidad">
+            <option value="">Seleccionar</option>
+            <option>Kutxabank</option>
+            <option>Laboral Kutxa</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select class="form-inp" id="f-categoria" onchange="onCategoriaChange()"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Movimiento</label>
+          <select class="form-inp" id="f-tipomov" onchange="onTipoMovChange()">
+            <option value="">Seleccionar</option>
+            <option>Gasto</option>
+            <option>Ingreso</option>
+            <option value="Futuro">Futuro (Ahorro)</option>
+          </select>
+        </div>
+        <div class="form-group" id="tipogasto-group" style="display:none">
+          <label class="form-label">Tipo de gasto</label>
+          <select class="form-inp" id="f-tipogasto">
+            <option value="">Seleccionar</option>
+            <option value="Supervivencia">Supervivencia</option>
+            <option value="Estilo">Estilo de Vida</option>
+            <option value="Deuda">Deuda</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-submit" onclick="saveRegistro()">Guardar registro</button>
+      <button class="btn-cancel" onclick="closeModal('modal-reg')">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- MODAL EDITAR REGISTRO -->
+  <div class="modal-overlay" id="modal-edit">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div class="modal-title" style="margin:0">Modificar o Eliminar</div>
+        <button onclick="deleteRegistro()"
+          style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:7px 14px;font-size:13px;cursor:pointer">🗑</button>
+      </div>
+      <input type="hidden" id="edit-idx">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-inp" type="date" id="edit-fecha">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Importe (€)</label>
+          <input class="form-inp" type="number" id="edit-importe" step="0.01">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Concepto</label>
+        <input class="form-inp" type="text" id="edit-edit-concepto" style="display:none">
+        <input class="form-inp" type="text" id="edit-concepto">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Movimiento</label>
+          <select class="form-inp" id="edit-tipomov" onchange="onEditTipoMovChange()">
+            <option>Gasto</option>
+            <option>Ingreso</option>
+            <option>Futuro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select class="form-inp" id="edit-categoria"></select>
+        </div>
+      </div>
+      <div id="edit-tipogasto-group" style="display:none" class="form-group">
+        <label class="form-label">Tipo de gasto</label>
+        <select class="form-inp" id="edit-tipogasto">
+          <option value="Supervivencia">Supervivencia</option>
+          <option value="Estilo">Estilo</option>
+          <option value="Deuda">Deuda</option>
+        </select>
+      </div>
+      <button class="btn-submit" onclick="saveEditRegistro()">Guardar cambios</button>
+      <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
+    </div>
+  </div>
+
   <div id="setup">
     <div class="setup-logo" style="display:flex;align-items:center;gap:12px">
       <img src="logo_NexoFinanzas.png" style="width:40px;height:40px;border-radius:8px;object-fit:cover"
@@ -1317,7 +1427,7 @@
         <span class="sec-title">Últimos movimientos</span>
         <span class="sec-action" onclick="switchTab('registros')">Ver todos</span>
       </div>
-      <div class="tx-list" id="ultimos-list"></div>
+      <div class="tx-list" id="ultimos-list" data-source="banco"></div>
     </div>
 
     <!-- REGISTROS -->
@@ -1340,7 +1450,7 @@
         <div class="chip" onclick="setRegFilter('Ingreso',this)">Ingresos</div>
         <div class="chip" onclick="setRegFilter('Futuro',this)">Futuro</div>
       </div>
-      <div class="tx-list" id="reg-list"></div>
+      <div class="tx-list" id="reg-list" data-source="banco"></div>
     </div>
 
     <!-- EFECTIVO -->
@@ -1369,7 +1479,7 @@
       <div class="sec-header">
         <span class="sec-title">Todos los movimientos</span>
       </div>
-      <div class="tx-list" id="ef-list"></div>
+      <div class="tx-list" id="ef-list" data-source="efectivo"></div>
     </div>
 
     <!-- GASTOS FIJOS -->
@@ -1493,353 +1603,103 @@
         <span class="icon">📅</span><span class="label">Fijos</span>
       </div>
       <div class="nav-item" onclick="switchTab('consultas')" id="nav-consultas">
-        <span class="icon">🔍</span><span class="label">Consultas</span>
-      </div>
+        <div class="nav-item" data-action="switchTab" data-tab-id="consultas" id="nav-consultas">
+          <span class="icon">🔍</span><span class="label">Consultas</span>
+        </div>
     </nav>
   </div>
 
   <!-- FAB & ACTIONS -->
   <div class="fab-container">
-    <button class="fab" id="fab" onclick="openAddModal()">+</button>
+    <select class="form-inp" id="edit-ef-categoria" onchange="onEfCategoriaChange()"></select>
+  </div>
+  <div class="form-group" id="edit-ef-tipogasto-group">
+    <label class="form-label">Tipo de gasto</label>
+    <select class="form-inp" id="edit-ef-tipogasto">
+      <option value="">Seleccionar</option>
+      <option value="Supervivencia">Supervivencia</option>
+      <option value="Estilo">Estilo de Vida</option>
+      <option value="Deuda">Deuda</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Descripción</label>
+    <input class="form-inp" type="text" id="edit-ef-desc">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Importe (€)</label>
+    <input class="form-inp" type="number" id="edit-ef-importe" step="0.01" min="0">
+  </div>
+  <button class="btn-submit" onclick="saveEditEfectivo()">Guardar cambios</button>
+  <button class="btn-cancel" onclick="closeModal('modal-edit-ef')">Cancelar</button>
+  </div>
   </div>
 
-  <!-- MODAL NUEVO REGISTRO -->
-  <div class="modal-overlay" id="modal-reg">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-title" id="modal-title">Añadir Nuevo Registro</div>
-      <div id="modal-form-reg">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Fecha</label>
-            <input class="form-inp" type="date" id="f-fecha">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Importe (€)</label>
-            <input class="form-inp" type="number" id="f-importe" placeholder="0.00" step="0.01">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Concepto</label>
-          <input class="form-inp" type="text" id="f-concepto" placeholder="Descripción del movimiento">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Entidad</label>
-            <select class="form-inp" id="f-entidad">
-              <option value="">Seleccionar</option>
-              <option>Kutxabank</option>
-              <option>Laboral Kutxa</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Producto</label>
-            <select class="form-inp" id="f-producto">
-              <option value="">Seleccionar</option>
-              <option>Ahorro Facil</option>
-              <option>Nominas</option>
-              <option>Piso Ahorro</option>
-              <option>Sonia</option>
-              <option>Tak tik</option>
-              <option>Tarjeta de crédito</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Tipo producto</label>
-            <select class="form-inp" id="f-tipoprod">
-              <option value="">Seleccionar</option>
-              <option>Cuenta</option>
-              <option>Tarjeta de crédito</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Categoría</label>
-            <select class="form-inp" id="f-categoria" onchange="onCategoriaChange()">
-              <option value="">Seleccionar</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Movimiento</label>
-              <select class="form-inp" id="f-tipomov" onchange="onTipoMovChange()">
-                <option value="">Seleccionar</option>
-                <option>Gasto</option>
-                <option>Ingreso</option>
-                <option value="Futuro">Futuro (Ahorro)</option>
-              </select>
-            </div>
-            <div class="form-group" id="tipogasto-group" style="display:none">
-              <label class="form-label">Tipo de gasto</label>
-              <select class="form-inp" id="f-tipogasto" onchange="onTipoGastoChange()">
-                <option value="">Seleccionar</option>
-                <option value="Supervivencia">Supervivencia</option>
-                <option value="Estilo">Estilo de Vida</option>
-                <option value="Deuda">Deuda</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn-submit" onclick="saveRegistro()">Guardar registro</button>
-          <button class="btn-cancel" onclick="closeModal('modal-reg')">Cancelar</button>
-        </div>
-      </div>
-    </div>
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
 
-    <!-- MODAL NUEVO EFECTIVO -->
-    <div class="modal-overlay" id="modal-ef">
-      <div class="modal">
-        <div class="modal-handle"></div>
-        <div class="modal-title">Modificar o Eliminar Efectivo</div>
-        <div class="form-group">
-          <label class="form-label">Fecha</label>
-          <input class="form-inp" type="date" id="ef-fecha">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-inp" id="ef-tipo"
-            onchange="document.getElementById('ef-tipogasto-group').style.display = this.value === 'Gasto' ? 'block' : 'none'">
-            <option value="Gasto">Gasto en efectivo</option>
-            <option value="Entrada">Entrada (retirada cajero)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Concepto</label>
-          <input class="form-inp" type="text" id="ef-concepto" placeholder="¿En qué se gastó?">
-        </div>
-        <div class="form-group" id="ef-categoria-group">
-          <label class="form-label">Categoría</label>
-          <select class="form-inp" id="ef-categoria" onchange="onEfCategoriaChange()">
-            <option value="">Seleccionar</option>
-          </select>
-        </div>
-        <div id="ef-tipogasto-group" style="display:none">
-          <div class="form-group">
-            <label class="form-label">Tipo de gasto</label>
-            <select class="form-inp" id="ef-tipogasto">
-              <option value="">Seleccionar</option>
-              <option value="Supervivencia">Supervivencia</option>
-              <option value="Estilo">Estilo de Vida</option>
-              <option value="Deuda">Deuda</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Descripción</label>
-          <input class="form-inp" type="text" id="ef-desc" placeholder="Detalle adicional (opcional)">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Importe (€)</label>
-          <input class="form-inp" type="number" id="ef-importe" placeholder="0.00" step="0.01" min="0">
-        </div>
-        <button class="btn-submit" onclick="saveEfectivo()">Guardar</button>
-        <button class="btn-cancel" onclick="closeModal('modal-ef')">Cancelar</button>
-      </div>
-    </div>
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    // DATOS Y ESTADO
+    // ═══════════════════════════════════════════════════════════
+    let DB = {
+      registros: [],
+      efectivo: [],
+      gastosFijos: [
+        { cat: "Agua", conc: "Recibo urbide arabako ur", ultimo: "2026-03-04", importe: -49.31, freq: "Bimestral" },
+        { cat: "Comunidad", conc: "Cuota comunidad de vecinos", ultimo: "2026-03-06", importe: -48.76, freq: "Mensual" },
+        { cat: "Comunidad", conc: "Trf. garajes barrio la llana", ultimo: "2026-03-06", importe: -3.00, freq: "Mensual" },
+        { cat: "Cuota Eroski", conc: "Rbo eroski s. coop.", ultimo: "2026-03-06", importe: -12.99, freq: "Mensual" },
+        { cat: "Gas", conc: "Recibo ned suministro gl", ultimo: "2026-03-12", importe: -127.76, freq: "Bimestral" },
+        { cat: "Hipoteca", conc: "Cuota ptmo 852117208-6", ultimo: "2026-02-23", importe: -754.00, freq: "Mensual" },
+        { cat: "Internet", conc: "Recibo xfera moviles, s.", ultimo: "2026-03-06", importe: -63.21, freq: "Mensual" },
+        { cat: "Otros seguros", conc: "Rbo the phone house", ultimo: "2026-02-04", importe: -16.00, freq: "Mensual" },
+        { cat: "Otros seguros", conc: "Recibo occident gco", ultimo: "2026-03-05", importe: -16.81, freq: "Mensual" },
+        { cat: "Préstamos", conc: "Rbo rci banque s a.", ultimo: "2026-03-02", importe: -311.15, freq: "Mensual" },
+        { cat: "Seguro Vida", conc: "Rbo allianz (vida)", ultimo: "2026-01-02", importe: -172.17, freq: "Anual" },
+        { cat: "Seguro Vida", conc: "Recibo allianz (hogar)", ultimo: "2026-01-02", importe: -579.26, freq: "Anual" },
+        { cat: "Seguro auto", conc: "Recibo qualitas auto", ultimo: "2026-02-25", importe: -694.59, freq: "Anual" },
+        { cat: "Sindicato", conc: "L.a.b.", ultimo: "2026-03-02", importe: -16.31, freq: "Mensual" },
+        { cat: "Suministros", conc: "Recibo low cost power", ultimo: "2026-03-02", importe: -96.85, freq: "Mensual" },
+        { cat: "Suscripciones", conc: "Recibo paypal europe (1)", ultimo: "2026-02-24", importe: -6.99, freq: "Mensual" },
+        { cat: "Suscripciones", conc: "Recibo paypal europe (2)", ultimo: "2026-01-27", importe: -9.90, freq: "Mensual" },
+      ]
+    };
 
+    const CATS = {
+      Gasto: {
+        "Supervivencia": ["Hipoteca", "Supermercado", "Gasolina", "Seguro auto", "Seguro vida", "Gas", "Internet", "Electricidad", "Comunidad", "Ayuntamiento", "Mantenimiento hogar", "Seguro hogar", "Otros seguros", "Mantenimiento vehículo", "Agua", "Farmacia", "Hogar", "Transportes", "Niños y mascotas", "Sindicato", "Cuota Eroski", "Suministros"],
+        "Estilo": ["Efectivo", "Otras compras", "Óptica y dentista", "Ropa", "Estudios", "Restaurante", "Otros salud, saber y deporte", "Solidaridad", "Asesores y abogados", "Otros servicios", "Deporte", "Servicios y productos online", "Material deportivo", "Belleza", "Electrónica", "Loterías", "Espectáculos", "Librería", "Parking y peaje", "Otros gastos", "Suscripciones Online", "Regalos", "Televisión"],
+        "Deuda": ["Tarjeta crédito", "Préstamos", "Tarjeta a débito", "Cargos bancarios"]
+      },
+      Ingreso: ["Nómina", "Rendimientos", "Ingreso efectivo"],
+      "Futuro": ["Traspasos y transferencias", "Transferencias", "Inversiones"]
+    };
 
-    <!-- MODAL EDITAR REGISTRO -->
-    <div class="modal-overlay" id="modal-edit">
-      <div class="modal">
-        <div class="modal-handle"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <div class="modal-title" style="margin:0">Modificar o Eliminar Registro</div>
-          <button onclick="deleteRegistro()"
-            style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer">🗑
-            Eliminar</button>
-        </div>
-        <input type="hidden" id="edit-idx">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Fecha</label>
-            <input class="form-inp" type="date" id="edit-fecha">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Importe (€)</label>
-            <input class="form-inp" type="number" id="edit-importe" step="0.01">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Concepto</label>
-          <input class="form-inp" type="text" id="edit-concepto">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Entidad</label>
-            <select class="form-inp" id="edit-entidad">
-              <option value="">Seleccionar</option>
-              <option>Kutxabank</option>
-              <option>Laboral Kutxa</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Producto</label>
-            <select class="form-inp" id="edit-producto">
-              <option value="">Seleccionar</option>
-              <option>Ahorro Facil</option>
-              <option>Nominas</option>
-              <option>Piso Ahorro</option>
-              <option>Sonia</option>
-              <option>Tak tik</option>
-              <option>Tarjeta de crédito</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Tipo producto</label>
-            <select class="form-inp" id="edit-tipoprod">
-              <option value="">Seleccionar</option>
-              <option>Cuenta</option>
-              <option>Tarjeta de crédito</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Movimiento</label>
-            <select class="form-inp" id="edit-tipomov" onchange="onEditTipoMovChange()">
-              <option value="">Seleccionar</option>
-              <option>Gasto</option>
-              <option>Ingreso</option>
-              <option value="Futuro">Futuro (Ahorro)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group" id="edit-tipogasto-group">
-          <label class="form-label">Tipo de gasto</label>
-          <select class="form-inp" id="edit-tipogasto" onchange="onEditTipoGastoChange()">
-            <option value="">Seleccionar</option>
-            <option value="Supervivencia">Supervivencia</option>
-            <option value="Estilo">Estilo de Vida</option>
-            <option value="Deuda">Deuda</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Categoría</label>
-          <select class="form-inp" id="edit-categoria"></select>
-        </div>
-        <button class="btn-submit" onclick="saveEditRegistro()">Guardar cambios</button>
-        <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
-      </div>
-    </div>
+    const CAT_ICONS = {
+      "Hipoteca": "🏠", "Gas": "🔥", "Agua": "💧", "Suministros": "⚡", "Internet y Telefonía": "📱",
+      "Comunidad": "🏘", "Seguro Vida": "❤️", "Seguro auto": "🚗", "Otros seguros": "🛡️",
+      "Préstamos": "💳", "Sindicato": "👷", "Cuota Eroski": "🛒", "Suscripciones Online": "📺",
+      "Supermercado": "🛒", "Restaurante": "🍽️", "Gasolina": "⛽", "Farmacia": "💊", "Ropa": "👕",
+      "Electrónica": "💻", "Deporte": "🏃", "Espectáculos": "🎭", "Estudios": "📚", "Librería": "📖",
+      "Niños y mascotas": "👶", "Tabaco": "🚬", "Óptica y dentista": "👁️", "Parking y peaje": "🅿️",
+      "Servicios y productos online": "🌐", "Efectivo": "💵", "Nómina": "💼", "Inversiones": "📈",
+      "Traspasos y transferencias": "🔄", "default": "💰"
+    };
 
-    <!-- MODAL EDITAR EFECTIVO -->
-    <div class="modal-overlay" id="modal-edit-ef">
-      <div class="modal">
-        <div class="modal-handle"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <div class="modal-title" style="margin:0">Modificar o Eliminar Efectivo</div>
-          <button onclick="deleteEfectivo()"
-            style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer">🗑
-            Eliminar</button>
-        </div>
-        <input type="hidden" id="edit-ef-idx">
-        <div class="form-group">
-          <label class="form-label">Fecha</label>
-          <input class="form-inp" type="date" id="edit-ef-fecha">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-inp" id="edit-ef-tipo"
-            onchange="document.getElementById('edit-ef-tipogasto-group').style.display = this.value === 'Gasto' ? 'block' : 'none'">
-            <option value="Gasto">Gasto en efectivo</option>
-            <option value="Entrada">Entrada (retirada cajero)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Concepto</label>
-          <input class="form-inp" type="text" id="edit-ef-concepto">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Categoría</label>
-          <select class="form-inp" id="edit-ef-categoria" onchange="onEfCategoriaChange()"></select>
-        </div>
-        <div class="form-group" id="edit-ef-tipogasto-group">
-          <label class="form-label">Tipo de gasto</label>
-          <select class="form-inp" id="edit-ef-tipogasto">
-            <option value="">Seleccionar</option>
-            <option value="Supervivencia">Supervivencia</option>
-            <option value="Estilo">Estilo de Vida</option>
-            <option value="Deuda">Deuda</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Descripción</label>
-          <input class="form-inp" type="text" id="edit-ef-desc">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Importe (€)</label>
-          <input class="form-inp" type="number" id="edit-ef-importe" step="0.01" min="0">
-        </div>
-        <button class="btn-submit" onclick="saveEditEfectivo()">Guardar cambios</button>
-        <button class="btn-cancel" onclick="closeModal('modal-edit-ef')">Cancelar</button>
-      </div>
-    </div>
+    let SCRIPT_URL = '';
+    let DEMO_MODE = false;
+    let currentTab = 'inicio';
+    let selectedTx = null;
+    let regFilter = 'Todos';
+    // qFilter eliminado — usar qTipo/qMes/qCat
+    let pendingQueue = [];
+    let syncInterval;
 
-    <!-- TOAST -->
-    <div class="toast" id="toast"></div>
-
-    <script>
-      // ═══════════════════════════════════════════════════════════
-      // DATOS Y ESTADO
-      // ═══════════════════════════════════════════════════════════
-      let DB = {
-        registros: [],
-        efectivo: [],
-        gastosFijos: [
-          { cat: "Agua", conc: "Recibo urbide arabako ur", ultimo: "2026-03-04", importe: -49.31, freq: "Bimestral" },
-          { cat: "Comunidad", conc: "Cuota comunidad de vecinos", ultimo: "2026-03-06", importe: -48.76, freq: "Mensual" },
-          { cat: "Comunidad", conc: "Trf. garajes barrio la llana", ultimo: "2026-03-06", importe: -3.00, freq: "Mensual" },
-          { cat: "Cuota Eroski", conc: "Rbo eroski s. coop.", ultimo: "2026-03-06", importe: -12.99, freq: "Mensual" },
-          { cat: "Gas", conc: "Recibo ned suministro gl", ultimo: "2026-03-12", importe: -127.76, freq: "Bimestral" },
-          { cat: "Hipoteca", conc: "Cuota ptmo 852117208-6", ultimo: "2026-02-23", importe: -754.00, freq: "Mensual" },
-          { cat: "Internet", conc: "Recibo xfera moviles, s.", ultimo: "2026-03-06", importe: -63.21, freq: "Mensual" },
-          { cat: "Otros seguros", conc: "Rbo the phone house", ultimo: "2026-02-04", importe: -16.00, freq: "Mensual" },
-          { cat: "Otros seguros", conc: "Recibo occident gco", ultimo: "2026-03-05", importe: -16.81, freq: "Mensual" },
-          { cat: "Préstamos", conc: "Rbo rci banque s a.", ultimo: "2026-03-02", importe: -311.15, freq: "Mensual" },
-          { cat: "Seguro Vida", conc: "Rbo allianz (vida)", ultimo: "2026-01-02", importe: -172.17, freq: "Anual" },
-          { cat: "Seguro Vida", conc: "Recibo allianz (hogar)", ultimo: "2026-01-02", importe: -579.26, freq: "Anual" },
-          { cat: "Seguro auto", conc: "Recibo qualitas auto", ultimo: "2026-02-25", importe: -694.59, freq: "Anual" },
-          { cat: "Sindicato", conc: "L.a.b.", ultimo: "2026-03-02", importe: -16.31, freq: "Mensual" },
-          { cat: "Suministros", conc: "Recibo low cost power", ultimo: "2026-03-02", importe: -96.85, freq: "Mensual" },
-          { cat: "Suscripciones", conc: "Recibo paypal europe (1)", ultimo: "2026-02-24", importe: -6.99, freq: "Mensual" },
-          { cat: "Suscripciones", conc: "Recibo paypal europe (2)", ultimo: "2026-01-27", importe: -9.90, freq: "Mensual" },
-        ]
-      };
-
-      const CATS = {
-        Gasto: {
-          "Supervivencia": ["Hipoteca", "Supermercado", "Gasolina", "Seguro auto", "Seguro vida", "Gas", "Internet", "Electricidad", "Comunidad", "Ayuntamiento", "Mantenimiento hogar", "Seguro hogar", "Otros seguros", "Mantenimiento vehículo", "Agua", "Farmacia", "Hogar", "Transportes", "Niños y mascotas", "Sindicato", "Cuota Eroski", "Suministros"],
-          "Estilo": ["Efectivo", "Otras compras", "Óptica y dentista", "Ropa", "Estudios", "Restaurante", "Otros salud, saber y deporte", "Solidaridad", "Asesores y abogados", "Otros servicios", "Deporte", "Servicios y productos online", "Material deportivo", "Belleza", "Electrónica", "Loterías", "Espectáculos", "Librería", "Parking y peaje", "Otros gastos", "Suscripciones Online", "Regalos", "Televisión"],
-          "Deuda": ["Tarjeta crédito", "Préstamos", "Tarjeta a débito", "Cargos bancarios"]
-        },
-        Ingreso: ["Nómina", "Rendimientos", "Ingreso efectivo"],
-        "Futuro": ["Traspasos y transferencias", "Transferencias", "Inversiones"]
-      };
-
-      const CAT_ICONS = {
-        "Hipoteca": "🏠", "Gas": "🔥", "Agua": "💧", "Suministros": "⚡", "Internet y Telefonía": "📱",
-        "Comunidad": "🏘", "Seguro Vida": "❤️", "Seguro auto": "🚗", "Otros seguros": "🛡️",
-        "Préstamos": "💳", "Sindicato": "👷", "Cuota Eroski": "🛒", "Suscripciones Online": "📺",
-        "Supermercado": "🛒", "Restaurante": "🍽️", "Gasolina": "⛽", "Farmacia": "💊", "Ropa": "👕",
-        "Electrónica": "💻", "Deporte": "🏃", "Espectáculos": "🎭", "Estudios": "📚", "Librería": "📖",
-        "Niños y mascotas": "👶", "Tabaco": "🚬", "Óptica y dentista": "👁️", "Parking y peaje": "🅿️",
-        "Servicios y productos online": "🌐", "Efectivo": "💵", "Nómina": "💼", "Inversiones": "📈",
-        "Traspasos y transferencias": "🔄", "default": "💰"
-      };
-
-      let SCRIPT_URL = '';
-      let DEMO_MODE = false;
-      let currentTab = 'inicio';
-      let selectedTx = null;
-      let regFilter = 'Todos';
-      // qFilter eliminado — usar qTipo/qMes/qCat
-      let pendingQueue = [];
-      let syncInterval;
-
-      // ═══════════════════════════════════════════════════════════
-      // APPS SCRIPT CODE
-      // ═══════════════════════════════════════════════════════════
-      const APPS_SCRIPT = `// Cuentas de Casa - Apps Script v3
+    // ═══════════════════════════════════════════════════════════
+    // APPS SCRIPT CODE
+    // ═══════════════════════════════════════════════════════════
+    const APPS_SCRIPT = `// Cuentas de Casa - Apps Script v3
 // Al implementar: Acceso = "Cualquier usuario"
 
 function doGet(e) {
@@ -2106,308 +1966,308 @@ function updateGastoFijo(ss, data) {
   return {ok: true};
 }`;
 
-      // ═══════════════════════════════════════════════════════════
-      // SETUP
-      // ═══════════════════════════════════════════════════════════
-      document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
+    // ═══════════════════════════════════════════════════════════
+    // SETUP
+    // ═══════════════════════════════════════════════════════════
+    document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
 
-      function copyScript() {
-        navigator.clipboard.writeText(APPS_SCRIPT).then(() => showToast('✅ Código copiado', 'success'));
+    function copyScript() {
+      navigator.clipboard.writeText(APPS_SCRIPT).then(() => showToast('✅ Código copiado', 'success'));
+    }
+
+    function saveConfig() {
+      const url = document.getElementById('script-url-inp').value.trim();
+      if (!url.startsWith('https://script.google.com')) {
+        showToast('❌ URL inválida — debe empezar por https://script.google.com', 'error');
+        return;
+      }
+      SCRIPT_URL = url;
+      localStorage.setItem('cc_script_url', url);
+      DEMO_MODE = false;
+      startApp();
+    }
+
+    function useDemoMode() {
+      DEMO_MODE = true;
+      SCRIPT_URL = '';
+      loadDemoData();
+      startApp();
+    }
+
+    function loadDemoData() {
+      const today = new Date();
+      const fmt = d => d.toISOString().split('T')[0];
+      const ago = n => { const d = new Date(today); d.setDate(d.getDate() - n); return fmt(d); };
+      DB.registros = [
+        { fecha: ago(1), importe: -253.23, concepto: "Recibo ned suministro gl", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Gas" },
+        { fecha: ago(2), importe: -48.76, concepto: "Cuota comunidad de vecinos", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Comunidad" },
+        { fecha: ago(3), importe: 2800, concepto: "Nómina marzo", entidad: "Kutxabank", tipomov: "Ingreso", tipogasto: "", categoria: "Nómina" },
+        { fecha: ago(4), importe: -311.15, concepto: "Rbo rci banque s a.", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Préstamos" },
+        { fecha: ago(5), importe: -63.21, concepto: "Recibo xfera moviles", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Internet y Telefonía" },
+        { fecha: ago(6), importe: -754, concepto: "Cuota ptmo 852117208-6", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Hipoteca" },
+        { fecha: ago(7), importe: -45.60, concepto: "Mercadona", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto variable", categoria: "Supermercado" },
+        { fecha: ago(10), importe: -25, concepto: "Gasolina", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto variable", categoria: "Gasolina" },
+      ];
+      DB.efectivo = [
+        { fecha: ago(5), concepto: "Retirada cajero", descripcion: "Cajero Laboral Kutxa", importe: 100, tipo: "Entrada" },
+        { fecha: ago(4), concepto: "Mercado barrio", descripcion: "Compra semanal", importe: 35, tipo: "Gasto" },
+        { fecha: ago(3), concepto: "Pintxos", descripcion: "Salida fin de semana", importe: 22, tipo: "Gasto" },
+        { fecha: ago(2), concepto: "Peluquería", descripcion: "Corte pelo", importe: 18, tipo: "Gasto" },
+      ];
+    }
+
+    function startApp() {
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('fab').style.display = 'flex';
+      setDate();
+      syncAll();
+      syncInterval = setInterval(syncAll, 30000);
+      window.addEventListener('online', () => { document.getElementById('offline-bar').classList.remove('show'); syncAll(); });
+      window.addEventListener('offline', () => document.getElementById('offline-bar').classList.add('show'));
+      if (!navigator.onLine) document.getElementById('offline-bar').classList.add('show');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // SYNC
+    // ═══════════════════════════════════════════════════════════
+    // Petición a Google Apps Script
+    // GET para leer (evita preflight), POST para escribir (soporta JSON complejo)
+    async function gasGet(params) {
+      try {
+        const url = new URL(SCRIPT_URL);
+        url.searchParams.set('payload', JSON.stringify(params));
+        const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
+        if (!r.ok) throw new Error('Error HTTP: ' + r.status);
+        const text = await r.text();
+        if (!text) throw new Error('Respuesta vacía del servidor');
+        try { return JSON.parse(text); }
+        catch (e) { throw new Error('Formato no válido: ' + text.substring(0, 50)); }
+      } catch (e) {
+        console.error('GAS Error:', e);
+        throw e;
+      }
+    }
+
+    async function syncAll() {
+      if (DEMO_MODE) { renderAll(); setSyncStatus('Modo demo — datos locales'); return; }
+      if (!SCRIPT_URL) return;
+      setSyncStatus('Sincronizando...');
+      document.querySelectorAll('.sync-btn').forEach(b => b.classList.add('spinning'));
+      try {
+        const data = await gasGet({ action: 'getAll' });
+        if (data.error) throw new Error(data.error);
+        DB.registros = normalizeRegistros(data.registros || []);
+        DB.efectivo = normalizeEfectivo(data.efectivo || []);
+        if ((data.gastosFijos || []).length) DB.gastosFijos = normalizeGF(data.gastosFijos);
+        renderAll();
+        setSyncStatus('Actualizado ' + new Date().toLocaleTimeString('es'));
+        if (pendingQueue.length) flushQueue();
+      } catch (e) {
+        setSyncStatus('⚠ Error de conexión');
+        showToast('Error de sincronización: ' + e.message, 'error');
+      }
+      document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('spinning'));
+    }
+
+    function normalizeRegistros(arr) {
+      return arr.map(r => ({
+        fecha: fmtDateIn(r['Fecha valor'] || r.fecha || ''),
+        importe: parseFloat(r['Importe'] ?? r.importe ?? 0),
+        concepto: r['Concepto'] || r.concepto || '',
+        entidad: r['Entidad'] || r.entidad || '',
+        producto: r['Nombre de producto'] || r.producto || '',
+        tipoprod: r['Tipo de producto'] || r.tipoprod || '',
+        tipomov: r['Tipo de movimiento'] || r.tipomov || '',
+        tipogasto: r['Tipo de gasto'] || r.tipogasto || '',
+        categoria: r['Categoría'] || r.categoria || '',
+      }));
+    }
+
+    function normalizeEfectivo(arr) {
+      return arr.map(r => ({
+        fecha: fmtDateIn(r['Fecha'] || r.fecha || ''),
+        concepto: r.Concepto || r.concepto || '',
+        descripcion: r.Descripcion || r.descripcion || '',
+        importe: parseFloat(r.Importe ?? r.importe ?? 0),
+        tipo: r.Tipo || r.tipo || '',
+        tipogasto: r['Tipo de gasto'] || r.tipogasto || '',
+        categoria: r['Categoría'] || r.categoria || '',
+      }));
+    }
+
+    function normalizeGF(arr) {
+      return arr.map(r => ({
+        cat: r['Categoría'] || r.cat || '',
+        conc: r['Concepto'] || r.conc || '',
+        ultimo: fmtDateIn(r['Último cobro'] || r.ultimo || ''),
+        importe: parseFloat(r['Importe'] ?? r.importe ?? 0),
+        freq: r['Frecuencia'] || r.freq || 'Mensual',
+      }));
+    }
+
+    function fmtDateIn(v) {
+      if (!v) return '';
+      const pad = n => String(n).padStart(2, '0');
+
+      // Objeto Date en memoria (nunca llega por JSON, pero por si acaso)
+      if (v instanceof Date) {
+        return v.getUTCFullYear() + '-' + pad(v.getUTCMonth() + 1) + '-' + pad(v.getUTCDate());
       }
 
-      function saveConfig() {
-        const url = document.getElementById('script-url-inp').value.trim();
-        if (!url.startsWith('https://script.google.com')) {
-          showToast('❌ URL inválida — debe empezar por https://script.google.com', 'error');
-          return;
-        }
-        SCRIPT_URL = url;
-        localStorage.setItem('cc_script_url', url);
-        DEMO_MODE = false;
-        startApp();
+      // Número serial de Sheets (días desde 30/12/1899)
+      if (typeof v === 'number') {
+        const d = new Date((v - 25569) * 86400 * 1000);
+        return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
       }
 
-      function useDemoMode() {
-        DEMO_MODE = true;
-        SCRIPT_URL = '';
-        loadDemoData();
-        startApp();
-      }
+      const s = String(v).trim();
 
-      function loadDemoData() {
-        const today = new Date();
-        const fmt = d => d.toISOString().split('T')[0];
-        const ago = n => { const d = new Date(today); d.setDate(d.getDate() - n); return fmt(d); };
-        DB.registros = [
-          { fecha: ago(1), importe: -253.23, concepto: "Recibo ned suministro gl", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Gas" },
-          { fecha: ago(2), importe: -48.76, concepto: "Cuota comunidad de vecinos", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Comunidad" },
-          { fecha: ago(3), importe: 2800, concepto: "Nómina marzo", entidad: "Kutxabank", tipomov: "Ingreso", tipogasto: "", categoria: "Nómina" },
-          { fecha: ago(4), importe: -311.15, concepto: "Rbo rci banque s a.", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Préstamos" },
-          { fecha: ago(5), importe: -63.21, concepto: "Recibo xfera moviles", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Internet y Telefonía" },
-          { fecha: ago(6), importe: -754, concepto: "Cuota ptmo 852117208-6", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto fijo", categoria: "Hipoteca" },
-          { fecha: ago(7), importe: -45.60, concepto: "Mercadona", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto variable", categoria: "Supermercado" },
-          { fecha: ago(10), importe: -25, concepto: "Gasolina", entidad: "Kutxabank", tipomov: "Gasto", tipogasto: "Gasto variable", categoria: "Gasolina" },
-        ];
-        DB.efectivo = [
-          { fecha: ago(5), concepto: "Retirada cajero", descripcion: "Cajero Laboral Kutxa", importe: 100, tipo: "Entrada" },
-          { fecha: ago(4), concepto: "Mercado barrio", descripcion: "Compra semanal", importe: 35, tipo: "Gasto" },
-          { fecha: ago(3), concepto: "Pintxos", descripcion: "Salida fin de semana", importe: 22, tipo: "Gasto" },
-          { fecha: ago(2), concepto: "Peluquería", descripcion: "Corte pelo", importe: 18, tipo: "Gasto" },
-        ];
-      }
-
-      function startApp() {
-        document.getElementById('setup').classList.add('hidden');
-        document.getElementById('app').style.display = 'flex';
-        document.getElementById('fab').style.display = 'flex';
-        setDate();
-        syncAll();
-        syncInterval = setInterval(syncAll, 30000);
-        window.addEventListener('online', () => { document.getElementById('offline-bar').classList.remove('show'); syncAll(); });
-        window.addEventListener('offline', () => document.getElementById('offline-bar').classList.add('show'));
-        if (!navigator.onLine) document.getElementById('offline-bar').classList.add('show');
-      }
-
-      // ═══════════════════════════════════════════════════════════
-      // SYNC
-      // ═══════════════════════════════════════════════════════════
-      // Petición a Google Apps Script
-      // GET para leer (evita preflight), POST para escribir (soporta JSON complejo)
-      async function gasGet(params) {
-        try {
-          const url = new URL(SCRIPT_URL);
-          url.searchParams.set('payload', JSON.stringify(params));
-          const r = await fetch(url.toString(), { method: 'GET', redirect: 'follow' });
-          if (!r.ok) throw new Error('Error HTTP: ' + r.status);
-          const text = await r.text();
-          if (!text) throw new Error('Respuesta vacía del servidor');
-          try { return JSON.parse(text); }
-          catch (e) { throw new Error('Formato no válido: ' + text.substring(0, 50)); }
-        } catch (e) {
-          console.error('GAS Error:', e);
-          throw e;
-        }
-      }
-
-      async function syncAll() {
-        if (DEMO_MODE) { renderAll(); setSyncStatus('Modo demo — datos locales'); return; }
-        if (!SCRIPT_URL) return;
-        setSyncStatus('Sincronizando...');
-        document.querySelectorAll('.sync-btn').forEach(b => b.classList.add('spinning'));
-        try {
-          const data = await gasGet({ action: 'getAll' });
-          if (data.error) throw new Error(data.error);
-          DB.registros = normalizeRegistros(data.registros || []);
-          DB.efectivo = normalizeEfectivo(data.efectivo || []);
-          if ((data.gastosFijos || []).length) DB.gastosFijos = normalizeGF(data.gastosFijos);
-          renderAll();
-          setSyncStatus('Actualizado ' + new Date().toLocaleTimeString('es'));
-          if (pendingQueue.length) flushQueue();
-        } catch (e) {
-          setSyncStatus('⚠ Error de conexión');
-          showToast('Error de sincronización: ' + e.message, 'error');
-        }
-        document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('spinning'));
-      }
-
-      function normalizeRegistros(arr) {
-        return arr.map(r => ({
-          fecha: fmtDateIn(r['Fecha valor'] || r.fecha || ''),
-          importe: parseFloat(r['Importe'] ?? r.importe ?? 0),
-          concepto: r['Concepto'] || r.concepto || '',
-          entidad: r['Entidad'] || r.entidad || '',
-          producto: r['Nombre de producto'] || r.producto || '',
-          tipoprod: r['Tipo de producto'] || r.tipoprod || '',
-          tipomov: r['Tipo de movimiento'] || r.tipomov || '',
-          tipogasto: r['Tipo de gasto'] || r.tipogasto || '',
-          categoria: r['Categoría'] || r.categoria || '',
-        }));
-      }
-
-      function normalizeEfectivo(arr) {
-        return arr.map(r => ({
-          fecha: fmtDateIn(r['Fecha'] || r.fecha || ''),
-          concepto: r.Concepto || r.concepto || '',
-          descripcion: r.Descripcion || r.descripcion || '',
-          importe: parseFloat(r.Importe ?? r.importe ?? 0),
-          tipo: r.Tipo || r.tipo || '',
-          tipogasto: r['Tipo de gasto'] || r.tipogasto || '',
-          categoria: r['Categoría'] || r.categoria || '',
-        }));
-      }
-
-      function normalizeGF(arr) {
-        return arr.map(r => ({
-          cat: r['Categoría'] || r.cat || '',
-          conc: r['Concepto'] || r.conc || '',
-          ultimo: fmtDateIn(r['Último cobro'] || r.ultimo || ''),
-          importe: parseFloat(r['Importe'] ?? r.importe ?? 0),
-          freq: r['Frecuencia'] || r.freq || 'Mensual',
-        }));
-      }
-
-      function fmtDateIn(v) {
-        if (!v) return '';
-        const pad = n => String(n).padStart(2, '0');
-
-        // Objeto Date en memoria (nunca llega por JSON, pero por si acaso)
-        if (v instanceof Date) {
-          return v.getUTCFullYear() + '-' + pad(v.getUTCMonth() + 1) + '-' + pad(v.getUTCDate());
-        }
-
-        // Número serial de Sheets (días desde 30/12/1899)
-        if (typeof v === 'number') {
-          const d = new Date((v - 25569) * 86400 * 1000);
+      // ISO con timezone: "2026-03-19T23:00:00.000Z" o "2026-03-20T00:00:00.000Z"
+      // GAS serializa fechas en hora local → UTC puede ser día anterior
+      // Solución: parsear como Date y leer componentes UTC
+      if (s.length > 10 && s.charAt(10) === 'T') {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) {
+          // Si la hora UTC es >= 12:00 asumimos que el día UTC+1/+2 es el siguiente
+          // En vez de adivinar: redondear al día más cercano
+          const utcH = d.getUTCHours();
+          if (utcH >= 12) {
+            // Medianoche local fue serializada como noche anterior en UTC → sumar 1 día
+            d.setUTCDate(d.getUTCDate() + 1);
+          }
           return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
         }
+      }
 
-        const s = String(v).trim();
+      // YYYY-MM-DD puro: devolver directamente
+      return s.substring(0, 10);
+    }
 
-        // ISO con timezone: "2026-03-19T23:00:00.000Z" o "2026-03-20T00:00:00.000Z"
-        // GAS serializa fechas en hora local → UTC puede ser día anterior
-        // Solución: parsear como Date y leer componentes UTC
-        if (s.length > 10 && s.charAt(10) === 'T') {
-          const d = new Date(s);
-          if (!isNaN(d.getTime())) {
-            // Si la hora UTC es >= 12:00 asumimos que el día UTC+1/+2 es el siguiente
-            // En vez de adivinar: redondear al día más cercano
-            const utcH = d.getUTCHours();
-            if (utcH >= 12) {
-              // Medianoche local fue serializada como noche anterior en UTC → sumar 1 día
-              d.setUTCDate(d.getUTCDate() + 1);
-            }
-            return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
-          }
+    async function apiPost(payload) {
+      if (DEMO_MODE) return { ok: true };
+      if (!navigator.onLine) { pendingQueue.push(payload); return { queued: true }; }
+      try {
+        const data = await gasGet({ ...payload });
+        // Mostrar respuesta real de GAS para depuración
+        if (data && data.error) {
+          showToast('GAS error: ' + data.error, 'error');
+        } else if (data && !data.ok && !data.registros) {
+          showToast('GAS respuesta: ' + JSON.stringify(data).substring(0, 80), 'error');
         }
+        return data;
+      } catch (e) {
+        showToast('Red error: ' + e.message, 'error');
+        pendingQueue.push(payload);
+        return { queued: true };
+      }
+    }
 
-        // YYYY-MM-DD puro: devolver directamente
-        return s.substring(0, 10);
+    async function flushQueue() {
+      while (pendingQueue.length && navigator.onLine) {
+        const p = pendingQueue.shift();
+        await apiPost(p);
+      }
+    }
+
+    function setSyncStatus(msg) {
+      document.getElementById('sync-status').textContent = msg;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════════
+    function renderAll() {
+      renderStats();
+      renderProximos();
+      renderUltimos();
+      renderRegistros();
+      renderEfectivo();
+      renderGastosFijos();
+      buildQSelects();
+      renderConsultas();
+    }
+
+    const fmt = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n);
+    const fmtDate = (s) => {
+      if (!s) return '';
+      const d = new Date(s + 'T12:00:00');
+      return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+    };
+
+    function getCatIcon(cat) { return CAT_ICONS[cat] || CAT_ICONS.default; }
+
+    function renderStats() {
+      const thisMonth = new Date().toISOString().slice(0, 7);
+
+      // Efectivo saldo
+      const efEntradas = DB.efectivo.filter(r => r.tipo === 'Entrada').reduce((s, r) => s + r.importe, 0);
+      const efGastos = DB.efectivo.filter(r => r.tipo === 'Gasto').reduce((s, r) => s + r.importe, 0);
+      const efSaldo = efEntradas - efGastos;
+
+      // Saldo total histórico (banco + efectivo)
+      const totalIngresos = DB.registros.filter(r => r.tipomov === 'Ingreso').reduce((s, r) => s + r.importe, 0);
+      const totalGastos = DB.registros.filter(r => r.tipomov === 'Gasto').reduce((s, r) => s + r.importe, 0);
+      const saldoTotal = totalIngresos + totalGastos + efSaldo;
+
+      const stEl = document.getElementById('stat-saldo-total');
+      stEl.textContent = fmt(saldoTotal);
+      stEl.className = 'stat-val ' + (saldoTotal >= 0 ? 'green' : 'red');
+
+      // Actualizar badges específicos
+      document.getElementById('stat-efectivo').textContent = fmt(efSaldo);
+      document.getElementById('ef-saldo-val').textContent = fmt(efSaldo);
+
+      // Rango de fechas (solo de registros bancarios para mantener la relevancia del timeline)
+      const fechas = DB.registros.map(r => r.fecha).filter(Boolean).sort();
+      if (fechas.length) {
+        const d1 = fmtDate(fechas[0]);
+        const d2 = fmtDate(fechas[fechas.length - 1]);
+        document.getElementById('stat-saldo-rango').textContent = d1 + ' — ' + d2;
       }
 
-      async function apiPost(payload) {
-        if (DEMO_MODE) return { ok: true };
-        if (!navigator.onLine) { pendingQueue.push(payload); return { queued: true }; }
-        try {
-          const data = await gasGet({ ...payload });
-          // Mostrar respuesta real de GAS para depuración
-          if (data && data.error) {
-            showToast('GAS error: ' + data.error, 'error');
-          } else if (data && !data.ok && !data.registros) {
-            showToast('GAS respuesta: ' + JSON.stringify(data).substring(0, 80), 'error');
-          }
-          return data;
-        } catch (e) {
-          showToast('Red error: ' + e.message, 'error');
-          pendingQueue.push(payload);
-          return { queued: true };
-        }
-      }
+      // Este mes
+      const regMes = DB.registros.filter(r => (r.fecha || '').startsWith(thisMonth));
+      const ingresos = regMes.filter(r => r.tipomov === 'Ingreso').reduce((s, r) => s + r.importe, 0);
+      const gastos = regMes.filter(r => r.tipomov === 'Gasto').reduce((s, r) => s + r.importe, 0);
+      const saldo = ingresos + gastos;
+      const mes = new Date().toLocaleString('es', { month: 'long', year: 'numeric' });
 
-      async function flushQueue() {
-        while (pendingQueue.length && navigator.onLine) {
-          const p = pendingQueue.shift();
-          await apiPost(p);
-        }
-      }
+      document.getElementById('stat-ingresos').textContent = fmt(ingresos);
+      document.getElementById('stat-ingresos-sub').textContent = mes;
+      document.getElementById('stat-gastos').textContent = fmt(Math.abs(gastos));
+      document.getElementById('stat-gastos-sub').textContent = mes;
+      const sEl = document.getElementById('stat-saldo');
+      sEl.textContent = fmt(saldo);
+      sEl.className = 'stat-val ' + (saldo >= 0 ? 'green' : 'red');
+      document.getElementById('stat-saldo-sub').textContent = mes;
 
-      function setSyncStatus(msg) {
-        document.getElementById('sync-status').textContent = msg;
-      }
+    }
 
-      // ═══════════════════════════════════════════════════════════
-      // RENDER
-      // ═══════════════════════════════════════════════════════════
-      function renderAll() {
-        renderStats();
-        renderProximos();
-        renderUltimos();
-        renderRegistros();
-        renderEfectivo();
-        renderGastosFijos();
-        buildQSelects();
-        renderConsultas();
-      }
+    function nextDate(ultimo, freq) {
+      if (!ultimo) return null;
+      const d = new Date(ultimo + 'T12:00:00');
+      if (freq === 'Mensual') d.setMonth(d.getMonth() + 1);
+      else if (freq === 'Bimestral') d.setMonth(d.getMonth() + 2);
+      else if (freq === 'Trimestral') d.setMonth(d.getMonth() + 3);
+      else if (freq === 'Anual') d.setFullYear(d.getFullYear() + 1);
+      return d;
+    }
 
-      const fmt = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n);
-      const fmtDate = (s) => {
-        if (!s) return '';
-        const d = new Date(s + 'T12:00:00');
-        return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-      };
+    function renderProximos() {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const items = DB.gastosFijos.map(gf => {
+        const nx = nextDate(gf.ultimo, gf.freq);
+        const days = nx ? Math.round((nx - today) / 86400000) : 999;
+        return { ...gf, nx, days };
+      }).filter(g => g.days <= 30).sort((a, b) => a.days - b.days).slice(0, 4);
 
-      function getCatIcon(cat) { return CAT_ICONS[cat] || CAT_ICONS.default; }
-
-      function renderStats() {
-        const thisMonth = new Date().toISOString().slice(0, 7);
-
-        // Efectivo saldo
-        const efEntradas = DB.efectivo.filter(r => r.tipo === 'Entrada').reduce((s, r) => s + r.importe, 0);
-        const efGastos = DB.efectivo.filter(r => r.tipo === 'Gasto').reduce((s, r) => s + r.importe, 0);
-        const efSaldo = efEntradas - efGastos;
-
-        // Saldo total histórico (banco + efectivo)
-        const totalIngresos = DB.registros.filter(r => r.tipomov === 'Ingreso').reduce((s, r) => s + r.importe, 0);
-        const totalGastos = DB.registros.filter(r => r.tipomov === 'Gasto').reduce((s, r) => s + r.importe, 0);
-        const saldoTotal = totalIngresos + totalGastos + efSaldo;
-
-        const stEl = document.getElementById('stat-saldo-total');
-        stEl.textContent = fmt(saldoTotal);
-        stEl.className = 'stat-val ' + (saldoTotal >= 0 ? 'green' : 'red');
-
-        // Actualizar badges específicos
-        document.getElementById('stat-efectivo').textContent = fmt(efSaldo);
-        document.getElementById('ef-saldo-val').textContent = fmt(efSaldo);
-
-        // Rango de fechas (solo de registros bancarios para mantener la relevancia del timeline)
-        const fechas = DB.registros.map(r => r.fecha).filter(Boolean).sort();
-        if (fechas.length) {
-          const d1 = fmtDate(fechas[0]);
-          const d2 = fmtDate(fechas[fechas.length - 1]);
-          document.getElementById('stat-saldo-rango').textContent = d1 + ' — ' + d2;
-        }
-
-        // Este mes
-        const regMes = DB.registros.filter(r => (r.fecha || '').startsWith(thisMonth));
-        const ingresos = regMes.filter(r => r.tipomov === 'Ingreso').reduce((s, r) => s + r.importe, 0);
-        const gastos = regMes.filter(r => r.tipomov === 'Gasto').reduce((s, r) => s + r.importe, 0);
-        const saldo = ingresos + gastos;
-        const mes = new Date().toLocaleString('es', { month: 'long', year: 'numeric' });
-
-        document.getElementById('stat-ingresos').textContent = fmt(ingresos);
-        document.getElementById('stat-ingresos-sub').textContent = mes;
-        document.getElementById('stat-gastos').textContent = fmt(Math.abs(gastos));
-        document.getElementById('stat-gastos-sub').textContent = mes;
-        const sEl = document.getElementById('stat-saldo');
-        sEl.textContent = fmt(saldo);
-        sEl.className = 'stat-val ' + (saldo >= 0 ? 'green' : 'red');
-        document.getElementById('stat-saldo-sub').textContent = mes;
-
-      }
-
-      function nextDate(ultimo, freq) {
-        if (!ultimo) return null;
-        const d = new Date(ultimo + 'T12:00:00');
-        if (freq === 'Mensual') d.setMonth(d.getMonth() + 1);
-        else if (freq === 'Bimestral') d.setMonth(d.getMonth() + 2);
-        else if (freq === 'Trimestral') d.setMonth(d.getMonth() + 3);
-        else if (freq === 'Anual') d.setFullYear(d.getFullYear() + 1);
-        return d;
-      }
-
-      function renderProximos() {
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const items = DB.gastosFijos.map(gf => {
-          const nx = nextDate(gf.ultimo, gf.freq);
-          const days = nx ? Math.round((nx - today) / 86400000) : 999;
-          return { ...gf, nx, days };
-        }).filter(g => g.days <= 30).sort((a, b) => a.days - b.days).slice(0, 4);
-
-        const el = document.getElementById('proximos-list');
-        if (!items.length) { el.innerHTML = ''; return; }
-        el.innerHTML = items.map(g => {
-          const cls = g.days <= 7 ? 'urgent' : g.days <= 15 ? 'soon' : 'ok';
-          const icon = getCatIcon(g.cat);
-          return `<div class="tx">
+      const el = document.getElementById('proximos-list');
+      if (!items.length) { el.innerHTML = ''; return; }
+      el.innerHTML = items.map(g => {
+        const cls = g.days <= 7 ? 'urgent' : g.days <= 15 ? 'soon' : 'ok';
+        const icon = getCatIcon(g.cat);
+        return `<div class="tx">
       <div class="tx-icon" style="background:var(--${cls === 'urgent' ? 'red' : cls === 'soon' ? 'amber' : 'green'}-bg)"><span>${icon}</span></div>
       <div class="tx-info">
         <div class="tx-name">${g.cat}</div>
@@ -2418,24 +2278,24 @@ function updateGastoFijo(ss, data) {
         <div style="font-size:11px;color:var(--${cls === 'urgent' ? 'red' : cls === 'soon' ? 'amber' : 'green'})">${g.days}d</div>
       </div>
     </div>`;
-        }).join('');
-      }
+      }).join('');
+    }
 
-      function renderUltimos() {
-        const items = [...DB.registros].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 5);
-        document.getElementById('ultimos-list').innerHTML = renderTxItems(items, 'banco');
-      }
+    function renderUltimos() {
+      const items = [...DB.registros].sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 5);
+      document.getElementById('ultimos-list').innerHTML = renderTxItems(items, 'banco');
+    }
 
-      function renderTxItems(items, srcType) {
-        if (!items.length) return `<div class="empty-state"><div class="icon">📭</div><p>Sin registros todavía</p></div>`;
-        return items.map((r, i) => {
-          const icon = getCatIcon(r.categoria);
-          const cls = r.tipomov === 'Ingreso' ? 'pos' : r.tipomov === 'Futuro' ? 'neu' : 'neg';
-          const badgeCls = r.tipogasto === 'Supervivencia' ? 'fijo' : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda') ? 'variable' : r.tipomov === 'Ingreso' ? 'ingreso' : 'nocomp';
-          const badgeTxt = r.tipogasto || r.tipomov;
-          const dbIdx = (r._idx !== undefined) ? r._idx : (srcType === 'efectivo' ? DB.efectivo.indexOf(r) : DB.registros.indexOf(r));
+    function renderTxItems(items, srcType) {
+      if (!items.length) return `<div class="empty-state"><div class="icon">📭</div><p>Sin registros todavía</p></div>`;
+      return items.map((r, i) => {
+        const icon = getCatIcon(r.categoria);
+        const cls = r.tipomov === 'Ingreso' ? 'pos' : r.tipomov === 'Futuro' ? 'neu' : 'neg';
+        const badgeCls = r.tipogasto === 'Supervivencia' ? 'fijo' : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda') ? 'variable' : r.tipomov === 'Ingreso' ? 'ingreso' : 'nocomp';
+        const badgeTxt = r.tipogasto || r.tipomov;
+        const dbIdx = (r._idx !== undefined) ? r._idx : (srcType === 'efectivo' ? DB.efectivo.indexOf(r) : DB.registros.indexOf(r));
 
-          return `<div class="tx" onclick="handleTxClick(this, '${srcType}', ${dbIdx}, event)" style="cursor:pointer">
+        return `<div class="tx" data-idx="${dbIdx}">
       <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
       <div class="tx-info">
         <div class="tx-name">${r.concepto || 'Sin concepto'}</div>
@@ -2446,35 +2306,35 @@ function updateGastoFijo(ss, data) {
         <span style="color:var(--text3);font-size:16px">›</span>
       </div>
     </div>`;
-        }).join('');
-      }
+      }).join('');
+    }
 
-      function renderRegistros() {
-        const q = (document.getElementById('reg-search').value || '').toLowerCase();
-        let items = [...DB.registros].sort((a, b) => b.fecha.localeCompare(a.fecha));
-        if (regFilter !== 'Todos') items = items.filter(r => r.tipomov === regFilter);
-        if (q) items = items.filter(r => (r.concepto + r.categoria + r.entidad).toLowerCase().includes(q));
-        document.getElementById('reg-list').innerHTML = renderTxItems(items, 'banco');
-      }
+    function renderRegistros() {
+      const q = (document.getElementById('reg-search').value || '').toLowerCase();
+      let items = [...DB.registros].sort((a, b) => b.fecha.localeCompare(a.fecha));
+      if (regFilter !== 'Todos') items = items.filter(r => r.tipomov === regFilter);
+      if (q) items = items.filter(r => (r.concepto + r.categoria + r.entidad).toLowerCase().includes(q));
+      document.getElementById('reg-list').innerHTML = renderTxItems(items, 'banco');
+    }
 
-      function renderEfectivo() {
-        const gastos = DB.efectivo.filter(r => r.tipo === 'Gasto').sort((a, b) => b.importe - a.importe).slice(0, 5);
-        document.getElementById('ef-top-list').innerHTML = gastos.length
-          ? gastos.map(r => {
-            const dbIdx = DB.efectivo.indexOf(r);
-            return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx}, event)" style="cursor:pointer">
+    function renderEfectivo() {
+      const gastos = DB.efectivo.filter(r => r.tipo === 'Gasto').sort((a, b) => b.importe - a.importe).slice(0, 5);
+      document.getElementById('ef-top-list').innerHTML = gastos.length
+        ? gastos.map(r => {
+          const dbIdx = DB.efectivo.indexOf(r);
+          return `<div class="tx" data-idx="${dbIdx}">
             <div class="tx-icon" style="background:var(--red-bg)">💸</div>
             <div class="tx-info"><div class="tx-name">${r.concepto}</div><div class="tx-meta">${fmtDate(r.fecha)}${r.descripcion ? ' · ' + r.descripcion : ''}</div></div>
             <div class="tx-amount neg">${fmt(r.importe)}</div>
           </div>`;
-          }).join('')
-          : '<div class="empty-state"><p>Sin gastos en efectivo</p></div>';
+        }).join('')
+        : '<div class="empty-state"><p>Sin gastos en efectivo</p></div>';
 
-        const todos = [...DB.efectivo].sort((a, b) => b.fecha.localeCompare(a.fecha));
-        document.getElementById('ef-list').innerHTML = todos.length
-          ? todos.map((r, i) => {
-            const dbIdx = DB.efectivo.indexOf(r);
-            return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx}, event)" style="cursor:pointer">
+      const todos = [...DB.efectivo].sort((a, b) => b.fecha.localeCompare(a.fecha));
+      document.getElementById('ef-list').innerHTML = todos.length
+        ? todos.map((r, i) => {
+          const dbIdx = DB.efectivo.indexOf(r);
+          return `<div class="tx" data-idx="${dbIdx}">
             <div class="tx-icon" style="background:var(--${r.tipo === 'Gasto' ? 'red' : 'green'}-bg)">💵</div>
             <div class="tx-info">
               <div class="tx-name">${r.concepto}</div>
@@ -2482,28 +2342,28 @@ function updateGastoFijo(ss, data) {
             </div>
             <div class="tx-amount ${r.tipo === 'Gasto' ? 'neg' : 'pos'}">${r.tipo === 'Entrada' ? '+' : ''}${fmt(r.importe)}</div>
           </div>`;
-          }).join('')
-          : '<div class="empty-state"><p>No hay movimientos de efectivo</p></div>';
-      }
+        }).join('')
+        : '<div class="empty-state"><p>No hay movimientos de efectivo</p></div>';
+    }
 
-      function renderGastosFijos() {
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        const total = DB.gastosFijos.reduce((s, g) => {
-          const m = g.freq === 'Mensual' ? 1 : g.freq === 'Bimestral' ? 2 : g.freq === 'Trimestral' ? 3 : 12;
-          return s + g.importe / m;
-        }, 0);
-        document.getElementById('gf-total').textContent = fmt(total) + '/mes';
+    function renderGastosFijos() {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const total = DB.gastosFijos.reduce((s, g) => {
+        const m = g.freq === 'Mensual' ? 1 : g.freq === 'Bimestral' ? 2 : g.freq === 'Trimestral' ? 3 : 12;
+        return s + g.importe / m;
+      }, 0);
+      document.getElementById('gf-total').textContent = fmt(total) + '/mes';
 
-        const items = DB.gastosFijos.map(gf => {
-          const nx = nextDate(gf.ultimo, gf.freq);
-          const days = nx ? Math.round((nx - today) / 86400000) : 999;
-          return { ...gf, nx, days };
-        }).sort((a, b) => a.days - b.days);
+      const items = DB.gastosFijos.map(gf => {
+        const nx = nextDate(gf.ultimo, gf.freq);
+        const days = nx ? Math.round((nx - today) / 86400000) : 999;
+        return { ...gf, nx, days };
+      }).sort((a, b) => a.days - b.days);
 
-        document.getElementById('gf-list').innerHTML = items.map(g => {
-          const cls = g.days <= 7 ? 'urgent' : g.days <= 15 ? 'soon' : 'ok';
-          const nxStr = g.nx ? g.nx.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
-          return `<div class="gf-item">
+      document.getElementById('gf-list').innerHTML = items.map(g => {
+        const cls = g.days <= 7 ? 'urgent' : g.days <= 15 ? 'soon' : 'ok';
+        const nxStr = g.nx ? g.nx.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        return `<div class="gf-item">
       <div class="gf-days ${cls}">
         <div class="num">${Math.max(0, g.days)}</div>
         <div class="unit">días</div>
@@ -2515,143 +2375,143 @@ function updateGastoFijo(ss, data) {
       </div>
       <div class="gf-amount">${fmt(g.importe)}</div>
     </div>`;
+      }).join('');
+    }
+
+    // ── Estado filtros consultas ──
+    let qTipo = '', qMes = '', qCat = '';
+
+    let qFuente = '';
+
+    function buildQSelects() {
+      // Poblar desplegable de meses
+      const meses = [...new Set([
+        ...DB.registros.map(r => (r.fecha || '').slice(0, 7)),
+        ...DB.efectivo.map(r => (r.fecha || '').slice(0, 7))
+      ])].filter(Boolean).sort().reverse();
+
+      const mesSel = document.getElementById('q-mes-sel');
+      const curMes = mesSel.value;
+      mesSel.innerHTML = '<option value="">Todos los meses</option>'
+        + meses.map(m => {
+          const [y, mo] = m.split('-');
+          const label = new Date(+y, +mo - 1, 1).toLocaleString('es', { month: 'long', year: 'numeric' });
+          return `<option value="${m}"${m === curMes ? ' selected' : ''}>${label}</option>`;
         }).join('');
+
+      // Poblar desplegable de categorías
+      const cats = [...new Set([
+        ...DB.registros.map(r => r.categoria),
+        ...DB.efectivo.map(r => r.categoria)
+      ].filter(Boolean))].sort();
+
+      const catSel = document.getElementById('q-cat-sel');
+      const curCat = catSel.value;
+      catSel.innerHTML = '<option value="">Todas las categorías</option>'
+        + cats.map(c => `<option value="${c}"${c === curCat ? ' selected' : ''}>${c}</option>`).join('');
+    }
+
+    function clearQFilters() {
+      qTipo = ''; qMes = ''; qCat = ''; qFuente = '';
+      document.getElementById('q-search').value = '';
+      document.getElementById('q-fecha-desde').value = '';
+      document.getElementById('q-fecha-hasta').value = '';
+      document.getElementById('q-mes-sel').value = '';
+      document.getElementById('q-cat-sel').value = '';
+      document.getElementById('q-tipo-sel').value = '';
+      document.getElementById('q-fuente-sel').value = '';
+      renderConsultas();
+    }
+
+    function renderConsultas() {
+      const qEl = document.getElementById('q-search');
+      const dEl = document.getElementById('q-fecha-desde');
+      const hEl = document.getElementById('q-fecha-hasta');
+
+      const q = (qEl ? qEl.value : '').toLowerCase();
+      const desde = dEl ? dEl.value : '';
+      const hasta = hEl ? hEl.value : '';
+
+      // Construir pool banco + efectivo
+      let banco = DB.registros.map((r, i) => ({ ...r, _src: 'banco', _idx: i }));
+      let ef = DB.efectivo.map((r, i) => ({
+        fecha: r.fecha,
+        concepto: r.concepto,
+        categoria: r.categoria || r.descripcion || r.tipo,
+        importe: r.tipo === 'Gasto' ? -Math.abs(r.importe) : Math.abs(r.importe),
+        tipov: r.tipo,
+        tipomov: r.tipo === 'Entrada' ? 'Ingreso' : 'Gasto',
+        tipogasto: r.tipogasto || (r.tipo === 'Entrada' ? 'Ingreso' : 'Efectivo'),
+        entidad: 'Efectivo',
+        _src: 'efectivo',
+        _idx: i
+      }));
+
+      let results = [];
+
+      // Filtro fuente (banco/efectivo/ambos)
+      if (qFuente === 'banco' || qTipo === 'Supervivencia' || qTipo === 'Estilo' || qTipo === 'Gasto' || qTipo === 'Ingreso') {
+        results = banco;
+      } else if (qFuente === 'efectivo' || qTipo === 'efectivo') {
+        results = ef;
+      } else {
+        results = [...banco, ...ef];
       }
 
-      // ── Estado filtros consultas ──
-      let qTipo = '', qMes = '', qCat = '';
+      // Filtro tipo de movimiento/gasto
+      if (qTipo === 'Gasto') results = results.filter(r => r.tipomov === 'Gasto');
+      else if (qTipo === 'Ingreso') results = results.filter(r => r.tipomov === 'Ingreso');
+      else if (qTipo === 'Supervivencia') results = results.filter(r => r.tipogasto === 'Supervivencia');
+      else if (qTipo === 'Estilo') results = results.filter(r => (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda'));
 
-      let qFuente = '';
+      // Filtro mes
+      if (qMes) results = results.filter(r => (r.fecha || '').startsWith(qMes));
 
-      function buildQSelects() {
-        // Poblar desplegable de meses
-        const meses = [...new Set([
-          ...DB.registros.map(r => (r.fecha || '').slice(0, 7)),
-          ...DB.efectivo.map(r => (r.fecha || '').slice(0, 7))
-        ])].filter(Boolean).sort().reverse();
+      // Filtro categoría
+      if (qCat) results = results.filter(r => r.categoria === qCat);
 
-        const mesSel = document.getElementById('q-mes-sel');
-        const curMes = mesSel.value;
-        mesSel.innerHTML = '<option value="">Todos los meses</option>'
-          + meses.map(m => {
-            const [y, mo] = m.split('-');
-            const label = new Date(+y, +mo - 1, 1).toLocaleString('es', { month: 'long', year: 'numeric' });
-            return `<option value="${m}"${m === curMes ? ' selected' : ''}>${label}</option>`;
-          }).join('');
+      // Filtro fechas manuales (desde/hasta)
+      if (desde) results = results.filter(r => r.fecha >= desde);
+      if (hasta) results = results.filter(r => r.fecha <= hasta);
 
-        // Poblar desplegable de categorías
-        const cats = [...new Set([
-          ...DB.registros.map(r => r.categoria),
-          ...DB.efectivo.map(r => r.categoria)
-        ].filter(Boolean))].sort();
+      // Filtro texto
+      if (q) results = results.filter(r => (
+        (r.concepto || '') + (r.categoria || '') + (r.entidad || '') + (r.tipogasto || '')
+      ).toLowerCase().includes(q));
 
-        const catSel = document.getElementById('q-cat-sel');
-        const curCat = catSel.value;
-        catSel.innerHTML = '<option value="">Todas las categorías</option>'
-          + cats.map(c => `<option value="${c}"${c === curCat ? ' selected' : ''}>${c}</option>`).join('');
+      results.sort((a, b) => b.fecha.localeCompare(a.fecha));
+
+      // Resumen
+      const sumEl = document.getElementById('q-summary');
+      const totalAmt = results.reduce((s, r) => s + (r.tipomov === 'Futuro' ? 0 : r.importe), 0);
+      if (results.length) {
+        sumEl.style.display = 'block';
+        document.getElementById('q-count').textContent = results.length + ' resultado' + (results.length !== 1 ? 's' : '');
+        const totEl = document.getElementById('q-total-amount');
+        totEl.textContent = fmt(totalAmt);
+        totEl.style.color = totalAmt >= 0 ? 'var(--green)' : 'var(--red)';
+      } else {
+        sumEl.style.display = 'none';
       }
 
-      function clearQFilters() {
-        qTipo = ''; qMes = ''; qCat = ''; qFuente = '';
-        document.getElementById('q-search').value = '';
-        document.getElementById('q-fecha-desde').value = '';
-        document.getElementById('q-fecha-hasta').value = '';
-        document.getElementById('q-mes-sel').value = '';
-        document.getElementById('q-cat-sel').value = '';
-        document.getElementById('q-tipo-sel').value = '';
-        document.getElementById('q-fuente-sel').value = '';
-        renderConsultas();
+      const el = document.getElementById('q-results');
+      if (!results.length) {
+        el.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>Sin resultados.<br>Prueba con otro filtro.</p></div>`;
+        return;
       }
 
-      function renderConsultas() {
-        const qEl = document.getElementById('q-search');
-        const dEl = document.getElementById('q-fecha-desde');
-        const hEl = document.getElementById('q-fecha-hasta');
+      el.innerHTML = `<div class="tx-list">`
+        + results.slice(0, 100).map(r => {
+          const icon = getCatIcon(r.categoria);
+          const cls = r.tipomov === 'Ingreso' ? 'pos' : r.tipomov === 'Futuro' ? 'neu' : 'neg';
+          const srcBadge = r._src === 'efectivo' ? '<span class="badge nocomp" style="margin-left:4px">💵</span>' : '';
+          const tipoBadge = r.tipogasto === 'Supervivencia'
+            ? '<span class="badge fijo" style="margin-left:4px">fijo</span>'
+            : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda')
+              ? '<span class="badge variable" style="margin-left:4px">variable</span>'
+              : r.tipomov === 'Ingreso' ? '<span class="badge ingreso" style="margin-left:4px">ingreso</span>' : '';
 
-        const q = (qEl ? qEl.value : '').toLowerCase();
-        const desde = dEl ? dEl.value : '';
-        const hasta = hEl ? hEl.value : '';
-
-        // Construir pool banco + efectivo
-        let banco = DB.registros.map((r, i) => ({ ...r, _src: 'banco', _idx: i }));
-        let ef = DB.efectivo.map((r, i) => ({
-          fecha: r.fecha,
-          concepto: r.concepto,
-          categoria: r.categoria || r.descripcion || r.tipo,
-          importe: r.tipo === 'Gasto' ? -Math.abs(r.importe) : Math.abs(r.importe),
-          tipov: r.tipo,
-          tipomov: r.tipo === 'Entrada' ? 'Ingreso' : 'Gasto',
-          tipogasto: r.tipogasto || (r.tipo === 'Entrada' ? 'Ingreso' : 'Efectivo'),
-          entidad: 'Efectivo',
-          _src: 'efectivo',
-          _idx: i
-        }));
-
-        let results = [];
-
-        // Filtro fuente (banco/efectivo/ambos)
-        if (qFuente === 'banco' || qTipo === 'Supervivencia' || qTipo === 'Estilo' || qTipo === 'Gasto' || qTipo === 'Ingreso') {
-          results = banco;
-        } else if (qFuente === 'efectivo' || qTipo === 'efectivo') {
-          results = ef;
-        } else {
-          results = [...banco, ...ef];
-        }
-
-        // Filtro tipo de movimiento/gasto
-        if (qTipo === 'Gasto') results = results.filter(r => r.tipomov === 'Gasto');
-        else if (qTipo === 'Ingreso') results = results.filter(r => r.tipomov === 'Ingreso');
-        else if (qTipo === 'Supervivencia') results = results.filter(r => r.tipogasto === 'Supervivencia');
-        else if (qTipo === 'Estilo') results = results.filter(r => (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda'));
-
-        // Filtro mes
-        if (qMes) results = results.filter(r => (r.fecha || '').startsWith(qMes));
-
-        // Filtro categoría
-        if (qCat) results = results.filter(r => r.categoria === qCat);
-
-        // Filtro fechas manuales (desde/hasta)
-        if (desde) results = results.filter(r => r.fecha >= desde);
-        if (hasta) results = results.filter(r => r.fecha <= hasta);
-
-        // Filtro texto
-        if (q) results = results.filter(r => (
-          (r.concepto || '') + (r.categoria || '') + (r.entidad || '') + (r.tipogasto || '')
-        ).toLowerCase().includes(q));
-
-        results.sort((a, b) => b.fecha.localeCompare(a.fecha));
-
-        // Resumen
-        const sumEl = document.getElementById('q-summary');
-        const totalAmt = results.reduce((s, r) => s + (r.tipomov === 'Futuro' ? 0 : r.importe), 0);
-        if (results.length) {
-          sumEl.style.display = 'block';
-          document.getElementById('q-count').textContent = results.length + ' resultado' + (results.length !== 1 ? 's' : '');
-          const totEl = document.getElementById('q-total-amount');
-          totEl.textContent = fmt(totalAmt);
-          totEl.style.color = totalAmt >= 0 ? 'var(--green)' : 'var(--red)';
-        } else {
-          sumEl.style.display = 'none';
-        }
-
-        const el = document.getElementById('q-results');
-        if (!results.length) {
-          el.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><p>Sin resultados.<br>Prueba con otro filtro.</p></div>`;
-          return;
-        }
-
-        el.innerHTML = `<div class="tx-list">`
-          + results.slice(0, 100).map(r => {
-            const icon = getCatIcon(r.categoria);
-            const cls = r.tipomov === 'Ingreso' ? 'pos' : r.tipomov === 'Futuro' ? 'neu' : 'neg';
-            const srcBadge = r._src === 'efectivo' ? '<span class="badge nocomp" style="margin-left:4px">💵</span>' : '';
-            const tipoBadge = r.tipogasto === 'Supervivencia'
-              ? '<span class="badge fijo" style="margin-left:4px">fijo</span>'
-              : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda')
-                ? '<span class="badge variable" style="margin-left:4px">variable</span>'
-                : r.tipomov === 'Ingreso' ? '<span class="badge ingreso" style="margin-left:4px">ingreso</span>' : '';
-
-            return `<div class="tx" onclick="handleTxClick(this, '${r._src || 'banco'}', ${r._idx}, event)" style="cursor:pointer">
+          return `<div class="tx" onclick="handleTxClick(this, '${r._src || 'banco'}', ${r._idx}, event)" style="cursor:pointer">
             <div style="display:flex;align-items:center;gap:12px">
               <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
               <div class="tx-info">
@@ -2661,562 +2521,579 @@ function updateGastoFijo(ss, data) {
             </div>
             <div class="tx-amount ${cls}">${r.tipomov === 'Ingreso' ? '+' : ''}${fmt(r.importe)}</div>
           </div>`;
-          }).join('')
-          + `</div>`
-          + (results.length > 100 ? `<div style="text-align:center;padding:12px;font-size:12px;color:var(--text3)">Mostrando 100 de ${results.length} resultados</div>` : '');
+        }).join('')
+        + `</div>`
+        + (results.length > 100 ? `<div style="text-align:center;padding:12px;font-size:12px;color:var(--text3)">Mostrando 100 de ${results.length} resultados</div>` : '');
 
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // NAVIGATION
+    // ═══════════════════════════════════════════════════════════
+    function switchTab(tab) {
+      currentTab = tab;
+      deselectTx();
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('screen-' + tab).classList.add('active');
+      document.getElementById('nav-' + tab).classList.add('active');
+      document.getElementById('fab').style.display = ['inicio', 'registros', 'efectivo'].includes(tab) ? 'flex' : 'none';
+    }
+
+    function handleTxClick(el, src, idx, e) {
+      if (e) e.stopPropagation();
+
+      try {
+        if (!el) return;
+        console.log('TX_CLICK:', src, idx);
+
+        // Remover selección previa
+        document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
+
+        // Marcar actual
+        el.classList.add('selected');
+
+        const index = parseInt(idx);
+        if (isNaN(index)) {
+          showToast('❌ Error: Índice no válido', 'error');
+          return;
+        }
+
+        selectedTx = { src, idx: index };
+
+        // Intentar abrir el formulario directamente
+        openSelectedEdit();
+
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Error al abrir: ' + err.message, 'error');
       }
+    }
 
-      // ═══════════════════════════════════════════════════════════
-      // NAVIGATION
-      // ═══════════════════════════════════════════════════════════
-      function switchTab(tab) {
-        currentTab = tab;
-        deselectTx();
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('screen-' + tab).classList.add('active');
-        document.getElementById('nav-' + tab).classList.add('active');
-        document.getElementById('fab').style.display = ['inicio', 'registros', 'efectivo'].includes(tab) ? 'flex' : 'none';
+    function deselectTx() {
+      document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
+      selectedTx = null;
+    }
+
+    function openAddModal() {
+      deselectTx();
+      initCategories('f-categoria');
+      if (currentTab === 'efectivo') {
+        initCategories('ef-categoria');
+        document.getElementById('ef-categoria-group').style.display = 'flex';
+        openModal('modal-ef');
+      } else {
+        openModal('modal-reg');
       }
+    }
 
-      function handleTxClick(el, src, idx, e) {
-        if (e) e.stopPropagation();
+    function openSelectedEdit() {
+      if (!selectedTx) return;
 
-        try {
-          if (!el) return;
-          console.log('TX_CLICK:', src, idx);
+      const { src, idx } = selectedTx;
+      console.log('OPEN_EDIT:', src, idx);
 
-          // Remover selección previa
-          document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
-
-          // Marcar actual
-          el.classList.add('selected');
-
-          const index = parseInt(idx);
-          if (isNaN(index)) {
-            showToast('❌ Error: Índice no válido', 'error');
+      try {
+        if (src === 'efectivo') {
+          if (!DB.efectivo[idx]) {
+            showToast('❌ No se encuentra el registro en efectivo', 'error');
             return;
           }
-
-          selectedTx = { src, idx: index };
-
-          // Intentar abrir el formulario directamente
-          openSelectedEdit();
-
-        } catch (err) {
-          console.error(err);
-          showToast('❌ Error al abrir: ' + err.message, 'error');
-        }
-      }
-
-      function deselectTx() {
-        document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
-        selectedTx = null;
-      }
-
-      function openAddModal() {
-        deselectTx();
-        initCategories('f-categoria');
-        if (currentTab === 'efectivo') {
-          initCategories('ef-categoria');
-          document.getElementById('ef-categoria-group').style.display = 'flex';
-          openModal('modal-ef');
+          openEditEfectivo(idx);
         } else {
-          openModal('modal-reg');
-        }
-      }
-
-      function openSelectedEdit() {
-        if (!selectedTx) return;
-
-        const { src, idx } = selectedTx;
-        console.log('OPEN_EDIT:', src, idx);
-
-        try {
-          if (src === 'efectivo') {
-            if (!DB.efectivo[idx]) {
-              showToast('❌ No se encuentra el registro en efectivo', 'error');
-              return;
-            }
-            openEditEfectivo(idx);
-          } else {
-            if (!DB.registros[idx]) {
-              showToast('❌ No se encuentra el registro bancario', 'error');
-              return;
-            }
-            openEditRegistro(idx);
+          if (!DB.registros[idx]) {
+            showToast('❌ No se encuentra el registro bancario', 'error');
+            return;
           }
-        } catch (err) {
-          console.error(err);
-          showToast('❌ Error en openSelectedEdit: ' + err.message, 'error');
+          openEditRegistro(idx);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Error en openSelectedEdit: ' + err.message, 'error');
+      }
+    }
+
+    function setRegFilter(f, el) {
+      regFilter = f;
+      document.querySelectorAll('#reg-chips .chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderRegistros();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODALS
+    // ═══════════════════════════════════════════════════════════
+
+    function initCategories(selectId) {
+      const el = document.getElementById(selectId);
+      if (!el) return;
+
+      let allOpts = [];
+      // Gastos
+      for (let sub in CATS.Gasto) {
+        allOpts = allOpts.concat(CATS.Gasto[sub]);
+      }
+      // Ingresos, Futuro
+      allOpts = [...allOpts, ...CATS.Ingreso, ...CATS.Futuro];
+
+      // Únicos y ordenados
+      allOpts = [...new Set(allOpts)].sort();
+
+      const current = el.value;
+      el.innerHTML = '<option value="">Seleccionar</option>' +
+        allOpts.map(o => `<option ${o === current ? 'selected' : ''}>${o}</option>`).join('');
+    }
+
+    function onCategoriaChange() {
+      const catVal = document.getElementById('f-categoria').value;
+      if (!catVal) return;
+
+      let foundMov = '';
+      let foundSub = '';
+
+      // Buscar en Gastos
+      for (let sub in CATS.Gasto) {
+        if (CATS.Gasto[sub].includes(catVal)) {
+          foundMov = 'Gasto';
+          foundSub = sub;
+          break;
         }
       }
 
-      function setRegFilter(f, el) {
-        regFilter = f;
-        document.querySelectorAll('#reg-chips .chip').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
-        renderRegistros();
+      if (!foundMov) {
+        if (CATS.Ingreso.includes(catVal)) foundMov = 'Ingreso';
+        else if (CATS.Futuro.includes(catVal)) foundMov = 'Futuro';
       }
 
-      // ═══════════════════════════════════════════════════════════
-      // MODALS
-      // ═══════════════════════════════════════════════════════════
+      document.getElementById('f-tipomov').value = foundMov;
+      onTipoMovChange(); // Refresh sub-group visibility
 
-      function initCategories(selectId) {
-        const el = document.getElementById(selectId);
-        if (!el) return;
+      if (foundMov === 'Gasto') {
+        document.getElementById('f-tipogasto').value = foundSub;
+      }
+    }
 
-        let allOpts = [];
-        // Gastos
-        for (let sub in CATS.Gasto) {
-          allOpts = allOpts.concat(CATS.Gasto[sub]);
-        }
-        // Ingresos, Futuro
-        allOpts = [...allOpts, ...CATS.Ingreso, ...CATS.Futuro];
-
-        // Únicos y ordenados
-        allOpts = [...new Set(allOpts)].sort();
-
-        const current = el.value;
-        el.innerHTML = '<option value="">Seleccionar</option>' +
-          allOpts.map(o => `<option ${o === current ? 'selected' : ''}>${o}</option>`).join('');
+    function openModal(id) {
+      console.log('MODAL_OPEN:', id);
+      const el = document.getElementById(id);
+      if (!el) {
+        showToast('❌ Error: f-' + id + ' no encontrado', 'error');
+        return;
       }
 
-      function onCategoriaChange() {
-        const catVal = document.getElementById('f-categoria').value;
-        if (!catVal) return;
+      // Asegurar que otros modales se cierren
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
 
-        let foundMov = '';
-        let foundSub = '';
+      el.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
 
-        // Buscar en Gastos
-        for (let sub in CATS.Gasto) {
-          if (CATS.Gasto[sub].includes(catVal)) {
-            foundMov = 'Gasto';
-            foundSub = sub;
-            break;
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      document.body.style.overflow = '';
+      deselectTx();
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(o => {
+      o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+    });
+
+    function onTipoMovChange() {
+      const tipo = document.getElementById('f-tipomov').value;
+      const tg = document.getElementById('tipogasto-group');
+      const cat = document.getElementById('f-categoria');
+      const currentCat = cat.value;
+
+      tg.style.display = tipo === 'Gasto' ? 'flex' : 'none';
+      if (tipo !== 'Gasto') fillCats(tipo, '', currentCat);
+    }
+
+    function onTipoGastoChange() {
+      const tg = document.getElementById('f-tipogasto').value;
+      const currentCat = document.getElementById('f-categoria').value;
+      fillCats('Gasto', tg, currentCat);
+    }
+
+    function fillCats(tipo, sub = '', preserveValue = '') {
+      const cat = document.getElementById('f-categoria');
+      let opts = [];
+      if (tipo === 'Gasto' && sub) opts = CATS.Gasto[sub] || [];
+      else if (tipo === 'Ingreso') opts = CATS.Ingreso;
+      else if (tipo === 'Futuro') opts = CATS['Futuro'];
+
+      if (!tipo && !sub) return;
+      cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option${o === preserveValue ? ' selected' : ''}>${o}</option>`).join('');
+    }
+
+    function setDate() {
+      const today = new Date().toISOString().split('T')[0];
+      ['f-fecha', 'ef-fecha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
+    }
+
+    // Función eliminada (duplicada)
+
+    function onEfCategoriaChange() {
+      const catVal = document.getElementById('ef-categoria').value || document.getElementById('edit-ef-categoria').value;
+      if (!catVal) return;
+
+      let foundSub = '';
+      if (CATS.Gasto.Supervivencia.includes(catVal)) foundSub = 'Supervivencia';
+      else if (CATS.Gasto.Estilo.includes(catVal)) foundSub = 'Estilo';
+      else if (CATS.Gasto.Deuda.includes(catVal)) foundSub = 'Deuda';
+
+      // Identificar si estamos en modal nuevo o edición
+      const isEdit = document.getElementById('modal-edit-ef').classList.contains('open');
+      const prefix = isEdit ? 'edit-ef-' : 'ef-';
+
+      if (foundSub) {
+        document.getElementById(prefix + 'tipo').value = 'Gasto';
+        document.getElementById(prefix + 'tipogasto').value = foundSub;
+        document.getElementById(prefix + 'tipogasto-group').style.display = 'block';
+      } else if (CATS.Ingreso.includes(catVal)) {
+        document.getElementById(prefix + 'tipo').value = 'Entrada';
+        document.getElementById(prefix + 'tipogasto-group').style.display = 'none';
+      }
+    }
+
+    async function saveRegistro() {
+      const fecha = document.getElementById('f-fecha').value;
+      const importe = parseFloat(document.getElementById('f-importe').value);
+      const concepto = document.getElementById('f-concepto').value.trim();
+      const entidad = document.getElementById('f-entidad').value;
+      const producto = document.getElementById('f-producto').value;
+      const tipoprod = document.getElementById('f-tipoprod').value;
+      const tipomov = document.getElementById('f-tipomov').value;
+      const tipogasto = document.getElementById('f-tipogasto').value;
+      const categoria = document.getElementById('f-categoria').value;
+
+      if (!fecha || isNaN(importe) || !concepto || !tipomov || !categoria) {
+        showToast('❌ Rellena todos los campos obligatorios', 'error'); return;
+      }
+
+      const row = [fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria];
+      DB.registros.unshift({ fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria });
+
+      // Actualizar gasto fijo si aplica
+      let gfUpdated = false;
+      if (tipogasto === 'Supervivencia') {
+        const concLow = concepto.toLowerCase();
+        DB.gastosFijos.forEach(gf => {
+          const gfLow = gf.conc.toLowerCase();
+          const prefix = gfLow.substring(0, 10);
+          if (concLow.includes(prefix) || gfLow.includes(concLow.substring(0, 10))) {
+            gf.ultimo = fecha;
+            // El importe en gastosFijos es siempre negativo
+            gf.importe = importe < 0 ? importe : -Math.abs(importe);
+            gfUpdated = true;
           }
-        }
-
-        if (!foundMov) {
-          if (CATS.Ingreso.includes(catVal)) foundMov = 'Ingreso';
-          else if (CATS.Futuro.includes(catVal)) foundMov = 'Futuro';
-        }
-
-        document.getElementById('f-tipomov').value = foundMov;
-        onTipoMovChange(); // Refresh sub-group visibility
-
-        if (foundMov === 'Gasto') {
-          document.getElementById('f-tipogasto').value = foundSub;
+        });
+        if (gfUpdated) {
+          apiPost({ action: 'updateGastoFijo', keyword: concepto.substring(0, 10), fecha, importe: importe < 0 ? importe : -Math.abs(importe) });
         }
       }
 
-      function openModal(id) {
-        console.log('MODAL_OPEN:', id);
-        const el = document.getElementById(id);
-        if (!el) {
-          showToast('❌ Error: f-' + id + ' no encontrado', 'error');
-          return;
-        }
+      renderAll();
+      closeModal('modal-reg');
+      resetForm(['f-importe', 'f-concepto']);
+      document.getElementById('f-tipomov').value = '';
+      document.getElementById('tipogasto-group').style.display = 'none';
+      showToast('✅ Registro guardado', 'success');
+      await apiPost({ action: 'addRegistro', row });
 
-        // Asegurar que otros modales se cierren
-        document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+      // Si es una retirada de efectivo, añadirlo automáticamente a la cuenta de efectivo
+      if (categoria === 'Efectivo') {
+        const efRow = [fecha, concepto, 'Traslado desde banco', Math.abs(importe), 'Entrada'];
+        DB.efectivo.unshift({
+          fecha,
+          concepto,
+          descripcion: 'Traslado desde banco',
+          importe: Math.abs(importe),
+          tipo: 'Entrada'
+        });
+        renderAll();
+        showToast('✅ Saldo de efectivo actualizado', 'success');
+        await apiPost({ action: 'addEfectivo', row: efRow });
+      }
+    }
 
-        el.classList.add('open');
-        document.body.style.overflow = 'hidden';
+    async function saveEfectivo() {
+      const fecha = document.getElementById('ef-fecha').value;
+      const tipo = document.getElementById('ef-tipo').value;
+      const concepto = document.getElementById('ef-concepto').value.trim();
+      const desc = document.getElementById('ef-desc').value.trim();
+      const importe = parseFloat(document.getElementById('ef-importe').value);
+      const tipogasto = document.getElementById('ef-tipogasto').value;
+      const categoria = document.getElementById('ef-categoria').value;
+
+      if (!fecha || !concepto || isNaN(importe) || importe <= 0) {
+        showToast('❌ Rellena todos los campos', 'error'); return;
       }
 
-      function closeModal(id) {
-        document.getElementById(id).classList.remove('open');
-        document.body.style.overflow = '';
-        deselectTx();
+      const row = [fecha, concepto, desc, importe, tipo, tipogasto, categoria];
+      DB.efectivo.unshift({ fecha, concepto, descripcion: desc, importe, tipo, tipogasto, categoria });
+      renderAll();
+      closeModal('modal-ef');
+      resetForm(['ef-concepto', 'ef-desc', 'ef-importe', 'ef-categoria', 'ef-tipogasto']);
+      showToast('✅ Efectivo guardado', 'success');
+      await apiPost({ action: 'addEfectivo', row });
+    }
+
+    function resetForm(ids) { ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
+
+    // ═══════════════════════════════════════════════════════════
+    // TOAST
+    // ═══════════════════════════════════════════════════════════
+    let toastTimer;
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + type + ' show';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    // EDICIÓN DE REGISTROS
+    // ═══════════════════════════════════════════════════════════
+
+    function onEditTipoMovChange() {
+      const tipo = document.getElementById('edit-tipomov').value;
+      const tg = document.getElementById('edit-tipogasto-group');
+      tg.style.display = tipo === 'Gasto' ? 'flex' : 'none';
+      if (tipo !== 'Gasto') fillEditCats(tipo, '');
+    }
+
+    function onEditTipoGastoChange() {
+      const tg = document.getElementById('edit-tipogasto').value;
+      fillEditCats('Gasto', tg);
+    }
+
+    function fillEditCats(tipo, sub) {
+      const cat = document.getElementById('edit-categoria');
+      let opts = [];
+      if (tipo === 'Gasto' && sub) opts = CATS.Gasto[sub] || [];
+
+      else if (tipo === 'Gasto') opts = [...(CATS.Gasto['Supervivencia'] || []), ...(CATS.Gasto['Estilo'] || []), ...(CATS.Gasto['Deuda'] || [])];
+      else if (tipo === 'Ingreso') opts = CATS.Ingreso;
+      else if (tipo === 'Futuro') opts = CATS['Futuro'];
+      const current = cat.value;
+      cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option${o === current ? ' selected' : ''}>${o}</option>`).join('');
+      if (!cat.value && current) cat.value = current;
+    }
+
+    function openEditRegistro(idx) {
+      if (idx < 0 || idx >= DB.registros.length) return;
+      const r = DB.registros[idx];
+      document.getElementById('edit-idx').value = idx;
+      document.getElementById('edit-fecha').value = r.fecha || '';
+      document.getElementById('edit-importe').value = r.importe || '';
+      document.getElementById('edit-concepto').value = r.concepto || '';
+      document.getElementById('edit-entidad').value = r.entidad || '';
+      document.getElementById('edit-producto').value = r.producto || '';
+      document.getElementById('edit-tipoprod').value = r.tipoprod || '';
+      document.getElementById('edit-tipomov').value = r.tipomov || '';
+      document.getElementById('edit-tipogasto').value = r.tipogasto || '';
+
+      // Mostrar/ocultar tipo gasto
+      const tg = document.getElementById('edit-tipogasto-group');
+      tg.style.display = r.tipomov === 'Gasto' ? 'flex' : 'none';
+
+      // Llenar categorías
+      fillEditCats(r.tipomov || '', r.tipogasto);
+      document.getElementById('edit-categoria').value = r.categoria || '';
+
+      openModal('modal-edit');
+    }
+
+    function openEditEfectivo(idx) {
+      if (idx < 0 || idx >= DB.efectivo.length) return;
+      const r = DB.efectivo[idx];
+      document.getElementById('edit-ef-idx').value = idx;
+      document.getElementById('edit-ef-fecha').value = r.fecha || '';
+      document.getElementById('edit-ef-tipo').value = r.tipo || 'Gasto';
+      document.getElementById('edit-ef-concepto').value = r.concepto || '';
+      document.getElementById('edit-ef-desc').value = r.descripcion || '';
+      document.getElementById('edit-ef-importe').value = r.importe || '';
+
+      initCategories('edit-ef-categoria');
+      document.getElementById('edit-ef-categoria').value = r.categoria || '';
+      document.getElementById('edit-ef-tipogasto').value = r.tipogasto || '';
+      document.getElementById('edit-ef-tipogasto-group').style.display = r.tipo === 'Gasto' ? 'block' : 'none';
+
+      openModal('modal-edit-ef');
+    }
+
+    // Función unificada abajo
+
+    async function saveEditEfectivo() {
+      const idx = parseInt(document.getElementById('edit-ef-idx').value);
+      const original = { ...DB.efectivo[idx] };
+
+      const updated = {
+        fecha: document.getElementById('edit-ef-fecha').value,
+        tipo: document.getElementById('edit-ef-tipo').value,
+        concepto: document.getElementById('edit-ef-concepto').value.trim(),
+        descripcion: document.getElementById('edit-ef-desc').value.trim(),
+        importe: parseFloat(document.getElementById('edit-ef-importe').value),
+        tipogasto: document.getElementById('edit-ef-tipogasto').value,
+        categoria: document.getElementById('edit-ef-categoria').value
+      };
+
+      const originalRow = [original.fecha, original.concepto, original.descripcion, original.importe, original.tipo, original.tipogasto, original.categoria];
+      const updatedRow = [updated.fecha, updated.concepto, updated.descripcion, updated.importe, updated.tipo, updated.tipogasto, updated.categoria];
+
+      DB.efectivo[idx] = updated;
+      renderAll();
+      closeModal('modal-edit-ef');
+      showToast('✅ Cambios guardados', 'success');
+      await apiPost({ action: 'editEfectivo', original: originalRow, updated: updatedRow });
+    }
+
+    async function deleteEfectivo() {
+      if (!confirm('¿Eliminar este movimiento de efectivo?')) return;
+      const idxStr = document.getElementById('edit-ef-idx').value;
+      const idx = parseInt(idxStr);
+      if (isNaN(idx) || idx < 0 || !DB.efectivo[idx]) {
+        showToast('❌ Error al localizar el registro para eliminar', 'error');
+        return;
       }
 
-      document.querySelectorAll('.modal-overlay').forEach(o => {
-        o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
+      const r = DB.efectivo[idx];
+      const row = [r.fecha, r.concepto, r.descripcion, r.importe, r.tipo, r.tipogasto, r.categoria];
+
+      DB.efectivo.splice(idx, 1);
+      renderAll();
+      closeModal('modal-edit-ef');
+      deselectTx();
+      showToast('🗑 Movimiento de efectivo eliminado', 'success');
+      await apiPost({ action: 'deleteEfectivo', row });
+    }
+
+
+    async function saveEditRegistro() {
+      const idx = parseInt(document.getElementById('edit-idx').value);
+      const fecha = document.getElementById('edit-fecha').value;
+      const importe = parseFloat(document.getElementById('edit-importe').value);
+      const concepto = document.getElementById('edit-concepto').value.trim();
+      const entidad = document.getElementById('edit-entidad').value;
+      const producto = document.getElementById('edit-producto').value;
+      const tipoprod = document.getElementById('edit-tipoprod').value;
+      const tipomov = document.getElementById('edit-tipomov').value;
+      const tipogasto = document.getElementById('edit-tipogasto').value;
+      const categoria = document.getElementById('edit-categoria').value;
+
+      if (!fecha || isNaN(importe) || !concepto || !tipomov) {
+        showToast('❌ Rellena los campos obligatorios', 'error'); return;
+      }
+
+      // Guardar original para identificarlo en Sheets
+      const original = { ...DB.registros[idx] };
+
+      // Actualizar localmente
+      DB.registros[idx] = { fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria };
+
+      // Actualizar gasto fijo si aplica
+      if (tipogasto === 'Supervivencia') {
+        const concLow = concepto.toLowerCase();
+        DB.gastosFijos.forEach(gf => {
+          const gfLow = gf.conc.toLowerCase();
+          const prefix = gfLow.substring(0, 10);
+          if (concLow.includes(prefix) || gfLow.includes(concLow.substring(0, 10))) {
+            gf.ultimo = fecha;
+            gf.importe = importe < 0 ? importe : -Math.abs(importe);
+          }
+        });
+      }
+
+      // Enviar a Google Sheets y esperar respuesta
+      const result = await apiPost({
+        action: 'editRegistro',
+        original: [original.fecha, original.importe, original.concepto, original.entidad,
+        original.producto, original.tipoprod, original.tipomov, original.tipogasto, original.categoria],
+        updated: [fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria]
       });
 
-      function onTipoMovChange() {
-        const tipo = document.getElementById('f-tipomov').value;
-        const tg = document.getElementById('tipogasto-group');
-        const cat = document.getElementById('f-categoria');
-        const currentCat = cat.value;
+      console.log('editRegistro result:', JSON.stringify(result));
 
-        tg.style.display = tipo === 'Gasto' ? 'flex' : 'none';
-        if (tipo !== 'Gasto') fillCats(tipo, '', currentCat);
+      // Cerrar y refrescar
+      closeModal('modal-edit');
+      renderRegistros();
+      deselectTx();
+      if (result && result.ok) {
+        showToast('✅ Registro actualizado en Sheets', 'success');
+      } else if (result && result.error) {
+        showToast('Guardado local. Error Sheets: ' + result.error, 'error');
+      } else {
+        showToast('✅ Registro actualizado', 'success');
       }
+    }
 
-      function onTipoGastoChange() {
-        const tg = document.getElementById('f-tipogasto').value;
-        const currentCat = document.getElementById('f-categoria').value;
-        fillCats('Gasto', tg, currentCat);
-      }
+    async function deleteRegistro() {
+      const idx = parseInt(document.getElementById('edit-idx').value);
+      if (!confirm('¿Eliminar este registro?')) return;
+      const original = { ...DB.registros[idx] };
 
-      function fillCats(tipo, sub = '', preserveValue = '') {
-        const cat = document.getElementById('f-categoria');
-        let opts = [];
-        if (tipo === 'Gasto' && sub) opts = CATS.Gasto[sub] || [];
-        else if (tipo === 'Ingreso') opts = CATS.Ingreso;
-        else if (tipo === 'Futuro') opts = CATS['Futuro'];
+      const result = await apiPost({
+        action: 'deleteRegistro',
+        row: [original.fecha, original.importe, original.concepto, original.entidad,
+        original.producto, original.tipoprod, original.tipomov, original.tipogasto, original.categoria]
+      });
 
-        if (!tipo && !sub) return;
-        cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option${o === preserveValue ? ' selected' : ''}>${o}</option>`).join('');
-      }
-
-      function setDate() {
-        const today = new Date().toISOString().split('T')[0];
-        ['f-fecha', 'ef-fecha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
-      }
-
-      // Función eliminada (duplicada)
-
-      function onEfCategoriaChange() {
-        const catVal = document.getElementById('ef-categoria').value || document.getElementById('edit-ef-categoria').value;
-        if (!catVal) return;
-
-        let foundSub = '';
-        if (CATS.Gasto.Supervivencia.includes(catVal)) foundSub = 'Supervivencia';
-        else if (CATS.Gasto.Estilo.includes(catVal)) foundSub = 'Estilo';
-        else if (CATS.Gasto.Deuda.includes(catVal)) foundSub = 'Deuda';
-
-        // Identificar si estamos en modal nuevo o edición
-        const isEdit = document.getElementById('modal-edit-ef').classList.contains('open');
-        const prefix = isEdit ? 'edit-ef-' : 'ef-';
-
-        if (foundSub) {
-          document.getElementById(prefix + 'tipo').value = 'Gasto';
-          document.getElementById(prefix + 'tipogasto').value = foundSub;
-          document.getElementById(prefix + 'tipogasto-group').style.display = 'block';
-        } else if (CATS.Ingreso.includes(catVal)) {
-          document.getElementById(prefix + 'tipo').value = 'Entrada';
-          document.getElementById(prefix + 'tipogasto-group').style.display = 'none';
-        }
-      }
-
-      async function saveRegistro() {
-        const fecha = document.getElementById('f-fecha').value;
-        const importe = parseFloat(document.getElementById('f-importe').value);
-        const concepto = document.getElementById('f-concepto').value.trim();
-        const entidad = document.getElementById('f-entidad').value;
-        const producto = document.getElementById('f-producto').value;
-        const tipoprod = document.getElementById('f-tipoprod').value;
-        const tipomov = document.getElementById('f-tipomov').value;
-        const tipogasto = document.getElementById('f-tipogasto').value;
-        const categoria = document.getElementById('f-categoria').value;
-
-        if (!fecha || isNaN(importe) || !concepto || !tipomov || !categoria) {
-          showToast('❌ Rellena todos los campos obligatorios', 'error'); return;
-        }
-
-        const row = [fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria];
-        DB.registros.unshift({ fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria });
-
-        // Actualizar gasto fijo si aplica
-        let gfUpdated = false;
-        if (tipogasto === 'Supervivencia') {
-          const concLow = concepto.toLowerCase();
-          DB.gastosFijos.forEach(gf => {
-            const gfLow = gf.conc.toLowerCase();
-            const prefix = gfLow.substring(0, 10);
-            if (concLow.includes(prefix) || gfLow.includes(concLow.substring(0, 10))) {
-              gf.ultimo = fecha;
-              // El importe en gastosFijos es siempre negativo
-              gf.importe = importe < 0 ? importe : -Math.abs(importe);
-              gfUpdated = true;
-            }
-          });
-          if (gfUpdated) {
-            apiPost({ action: 'updateGastoFijo', keyword: concepto.substring(0, 10), fecha, importe: importe < 0 ? importe : -Math.abs(importe) });
+      if (result && result.ok) {
+        // Sincronizar efectivo si era una retirada
+        if (original.categoria === 'Efectivo') {
+          const efIdx = DB.efectivo.findIndex(e =>
+            e.fecha === original.fecha &&
+            e.concepto === original.concepto &&
+            Math.abs(Math.abs(e.importe) - Math.abs(original.importe)) < 0.01
+          );
+          if (efIdx >= 0) {
+            const efR = DB.efectivo[efIdx];
+            const efRow = [efR.fecha, efR.concepto, efR.descripcion, efR.importe, efR.tipo, efR.tipogasto, efR.categoria];
+            DB.efectivo.splice(efIdx, 1);
+            apiPost({ action: 'deleteEfectivo', row: efRow });
           }
         }
-
+        DB.registros.splice(idx, 1);
         renderAll();
-        closeModal('modal-reg');
-        resetForm(['f-importe', 'f-concepto']);
-        document.getElementById('f-tipomov').value = '';
-        document.getElementById('tipogasto-group').style.display = 'none';
-        showToast('✅ Registro guardado', 'success');
-        await apiPost({ action: 'addRegistro', row });
-
-        // Si es una retirada de efectivo, añadirlo automáticamente a la cuenta de efectivo
-        if (categoria === 'Efectivo') {
-          const efRow = [fecha, concepto, 'Traslado desde banco', Math.abs(importe), 'Entrada'];
-          DB.efectivo.unshift({
-            fecha,
-            concepto,
-            descripcion: 'Traslado desde banco',
-            importe: Math.abs(importe),
-            tipo: 'Entrada'
-          });
-          renderAll();
-          showToast('✅ Saldo de efectivo actualizado', 'success');
-          await apiPost({ action: 'addEfectivo', row: efRow });
-        }
-      }
-
-      async function saveEfectivo() {
-        const fecha = document.getElementById('ef-fecha').value;
-        const tipo = document.getElementById('ef-tipo').value;
-        const concepto = document.getElementById('ef-concepto').value.trim();
-        const desc = document.getElementById('ef-desc').value.trim();
-        const importe = parseFloat(document.getElementById('ef-importe').value);
-        const tipogasto = document.getElementById('ef-tipogasto').value;
-        const categoria = document.getElementById('ef-categoria').value;
-
-        if (!fecha || !concepto || isNaN(importe) || importe <= 0) {
-          showToast('❌ Rellena todos los campos', 'error'); return;
-        }
-
-        const row = [fecha, concepto, desc, importe, tipo, tipogasto, categoria];
-        DB.efectivo.unshift({ fecha, concepto, descripcion: desc, importe, tipo, tipogasto, categoria });
-        renderAll();
-        closeModal('modal-ef');
-        resetForm(['ef-concepto', 'ef-desc', 'ef-importe', 'ef-categoria', 'ef-tipogasto']);
-        showToast('✅ Efectivo guardado', 'success');
-        await apiPost({ action: 'addEfectivo', row });
-      }
-
-      function resetForm(ids) { ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; }); }
-
-      // ═══════════════════════════════════════════════════════════
-      // TOAST
-      // ═══════════════════════════════════════════════════════════
-      let toastTimer;
-      function showToast(msg, type = '') {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.className = 'toast ' + type + ' show';
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
-      }
-
-
-      // ═══════════════════════════════════════════════════════════
-      // EDICIÓN DE REGISTROS
-      // ═══════════════════════════════════════════════════════════
-
-      function onEditTipoMovChange() {
-        const tipo = document.getElementById('edit-tipomov').value;
-        const tg = document.getElementById('edit-tipogasto-group');
-        tg.style.display = tipo === 'Gasto' ? 'flex' : 'none';
-        if (tipo !== 'Gasto') fillEditCats(tipo, '');
-      }
-
-      function onEditTipoGastoChange() {
-        const tg = document.getElementById('edit-tipogasto').value;
-        fillEditCats('Gasto', tg);
-      }
-
-      function fillEditCats(tipo, sub) {
-        const cat = document.getElementById('edit-categoria');
-        let opts = [];
-        if (tipo === 'Gasto' && sub) opts = CATS.Gasto[sub] || [];
-
-        else if (tipo === 'Gasto') opts = [...(CATS.Gasto['Supervivencia'] || []), ...(CATS.Gasto['Estilo'] || []), ...(CATS.Gasto['Deuda'] || [])];
-        else if (tipo === 'Ingreso') opts = CATS.Ingreso;
-        else if (tipo === 'Futuro') opts = CATS['Futuro'];
-        const current = cat.value;
-        cat.innerHTML = '<option value="">Seleccionar</option>' + opts.map(o => `<option${o === current ? ' selected' : ''}>${o}</option>`).join('');
-        if (!cat.value && current) cat.value = current;
-      }
-
-      function openEditRegistro(idx) {
-        if (idx < 0 || idx >= DB.registros.length) return;
-        const r = DB.registros[idx];
-        document.getElementById('edit-idx').value = idx;
-        document.getElementById('edit-fecha').value = r.fecha || '';
-        document.getElementById('edit-importe').value = r.importe || '';
-        document.getElementById('edit-concepto').value = r.concepto || '';
-        document.getElementById('edit-entidad').value = r.entidad || '';
-        document.getElementById('edit-producto').value = r.producto || '';
-        document.getElementById('edit-tipoprod').value = r.tipoprod || '';
-        document.getElementById('edit-tipomov').value = r.tipomov || '';
-        document.getElementById('edit-tipogasto').value = r.tipogasto || '';
-
-        // Mostrar/ocultar tipo gasto
-        const tg = document.getElementById('edit-tipogasto-group');
-        tg.style.display = r.tipomov === 'Gasto' ? 'flex' : 'none';
-
-        // Llenar categorías
-        fillEditCats(r.tipomov || '', r.tipogasto);
-        document.getElementById('edit-categoria').value = r.categoria || '';
-
-        openModal('modal-edit');
-      }
-
-      function openEditEfectivo(idx) {
-        if (idx < 0 || idx >= DB.efectivo.length) return;
-        const r = DB.efectivo[idx];
-        document.getElementById('edit-ef-idx').value = idx;
-        document.getElementById('edit-ef-fecha').value = r.fecha || '';
-        document.getElementById('edit-ef-tipo').value = r.tipo || 'Gasto';
-        document.getElementById('edit-ef-concepto').value = r.concepto || '';
-        document.getElementById('edit-ef-desc').value = r.descripcion || '';
-        document.getElementById('edit-ef-importe').value = r.importe || '';
-
-        initCategories('edit-ef-categoria');
-        document.getElementById('edit-ef-categoria').value = r.categoria || '';
-        document.getElementById('edit-ef-tipogasto').value = r.tipogasto || '';
-        document.getElementById('edit-ef-tipogasto-group').style.display = r.tipo === 'Gasto' ? 'block' : 'none';
-
-        openModal('modal-edit-ef');
-      }
-
-      // Función unificada abajo
-
-      async function saveEditEfectivo() {
-        const idx = parseInt(document.getElementById('edit-ef-idx').value);
-        const original = { ...DB.efectivo[idx] };
-
-        const updated = {
-          fecha: document.getElementById('edit-ef-fecha').value,
-          tipo: document.getElementById('edit-ef-tipo').value,
-          concepto: document.getElementById('edit-ef-concepto').value.trim(),
-          descripcion: document.getElementById('edit-ef-desc').value.trim(),
-          importe: parseFloat(document.getElementById('edit-ef-importe').value),
-          tipogasto: document.getElementById('edit-ef-tipogasto').value,
-          categoria: document.getElementById('edit-ef-categoria').value
-        };
-
-        const originalRow = [original.fecha, original.concepto, original.descripcion, original.importe, original.tipo, original.tipogasto, original.categoria];
-        const updatedRow = [updated.fecha, updated.concepto, updated.descripcion, updated.importe, updated.tipo, updated.tipogasto, updated.categoria];
-
-        DB.efectivo[idx] = updated;
-        renderAll();
-        closeModal('modal-edit-ef');
-        showToast('✅ Cambios guardados', 'success');
-        await apiPost({ action: 'editEfectivo', original: originalRow, updated: updatedRow });
-      }
-
-      async function deleteEfectivo() {
-        if (!confirm('¿Eliminar este movimiento de efectivo?')) return;
-        const idxStr = document.getElementById('edit-ef-idx').value;
-        const idx = parseInt(idxStr);
-        if (isNaN(idx) || idx < 0 || !DB.efectivo[idx]) {
-          showToast('❌ Error al localizar el registro para eliminar', 'error');
-          return;
-        }
-
-        const r = DB.efectivo[idx];
-        const row = [r.fecha, r.concepto, r.descripcion, r.importe, r.tipo, r.tipogasto, r.categoria];
-
-        DB.efectivo.splice(idx, 1);
-        renderAll();
-        closeModal('modal-edit-ef');
-        deselectTx();
-        showToast('🗑 Movimiento de efectivo eliminado', 'success');
-        await apiPost({ action: 'deleteEfectivo', row });
-      }
-
-
-      async function saveEditRegistro() {
-        const idx = parseInt(document.getElementById('edit-idx').value);
-        const fecha = document.getElementById('edit-fecha').value;
-        const importe = parseFloat(document.getElementById('edit-importe').value);
-        const concepto = document.getElementById('edit-concepto').value.trim();
-        const entidad = document.getElementById('edit-entidad').value;
-        const producto = document.getElementById('edit-producto').value;
-        const tipoprod = document.getElementById('edit-tipoprod').value;
-        const tipomov = document.getElementById('edit-tipomov').value;
-        const tipogasto = document.getElementById('edit-tipogasto').value;
-        const categoria = document.getElementById('edit-categoria').value;
-
-        if (!fecha || isNaN(importe) || !concepto || !tipomov) {
-          showToast('❌ Rellena los campos obligatorios', 'error'); return;
-        }
-
-        // Guardar original para identificarlo en Sheets
-        const original = { ...DB.registros[idx] };
-
-        // Actualizar localmente
-        DB.registros[idx] = { fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria };
-
-        // Actualizar gasto fijo si aplica
-        if (tipogasto === 'Supervivencia') {
-          const concLow = concepto.toLowerCase();
-          DB.gastosFijos.forEach(gf => {
-            const gfLow = gf.conc.toLowerCase();
-            const prefix = gfLow.substring(0, 10);
-            if (concLow.includes(prefix) || gfLow.includes(concLow.substring(0, 10))) {
-              gf.ultimo = fecha;
-              gf.importe = importe < 0 ? importe : -Math.abs(importe);
-            }
-          });
-        }
-
-        // Enviar a Google Sheets y esperar respuesta
-        const result = await apiPost({
-          action: 'editRegistro',
-          original: [original.fecha, original.importe, original.concepto, original.entidad,
-          original.producto, original.tipoprod, original.tipomov, original.tipogasto, original.categoria],
-          updated: [fecha, importe, concepto, entidad, producto, tipoprod, tipomov, tipogasto, categoria]
-        });
-
-        console.log('editRegistro result:', JSON.stringify(result));
-
-        // Cerrar y refrescar
         closeModal('modal-edit');
-        renderRegistros();
-        deselectTx();
-        if (result && result.ok) {
-          showToast('✅ Registro actualizado en Sheets', 'success');
-        } else if (result && result.error) {
-          showToast('Guardado local. Error Sheets: ' + result.error, 'error');
-        } else {
-          showToast('✅ Registro actualizado', 'success');
-        }
+        showToast('✅ Registro eliminado en Sheets', 'success');
+      } else {
+        DB.registros.splice(idx, 1);
+        renderAll();
+        closeModal('modal-edit');
+        showToast('🗑 Eliminado localmente', '');
       }
-
-      async function deleteRegistro() {
-        const idx = parseInt(document.getElementById('edit-idx').value);
-        if (!confirm('¿Eliminar este registro?')) return;
-        const original = { ...DB.registros[idx] };
-
-        const result = await apiPost({
-          action: 'deleteRegistro',
-          row: [original.fecha, original.importe, original.concepto, original.entidad,
-          original.producto, original.tipoprod, original.tipomov, original.tipogasto, original.categoria]
-        });
-
-        if (result && result.ok) {
-          // Sincronizar efectivo si era una retirada
-          if (original.categoria === 'Efectivo') {
-            const efIdx = DB.efectivo.findIndex(e =>
-              e.fecha === original.fecha &&
-              e.concepto === original.concepto &&
-              Math.abs(Math.abs(e.importe) - Math.abs(original.importe)) < 0.01
-            );
-            if (efIdx >= 0) {
-              const efR = DB.efectivo[efIdx];
-              const efRow = [efR.fecha, efR.concepto, efR.descripcion, efR.importe, efR.tipo, efR.tipogasto, efR.categoria];
-              DB.efectivo.splice(efIdx, 1);
-              apiPost({ action: 'deleteEfectivo', row: efRow });
-            }
-          }
-          DB.registros.splice(idx, 1);
-          renderAll();
-          closeModal('modal-edit');
-          showToast('✅ Registro eliminado en Sheets', 'success');
-        } else {
-          DB.registros.splice(idx, 1);
-          renderAll();
-          closeModal('modal-edit');
-          showToast('🗑 Eliminado localmente', '');
-        }
-      }
+    }
 
 
-      // INIT
-      // ═══════════════════════════════════════════════════════════
-      const savedURL = localStorage.getItem('cc_script_url');
-      if (savedURL) {
-        SCRIPT_URL = savedURL;
-        DEMO_MODE = false;
-        startApp();
-      }
-    </script>
+    // INIT
+    // ═══════════════════════════════════════════════════════════
+    // EVENT DELEGATION PARA CLICS FIABLES
+    document.addEventListener('click', function (e) {
+      const txEl = e.target.closest('.tx');
+      if (!txEl) return;
+
+      // Evitar doble disparo
+      e.preventDefault();
+      e.stopPropagation();
+
+      const listEl = txEl.closest('.tx-list');
+      const source = listEl ? (listEl.dataset.source || 'banco') : 'banco';
+      const idx = txEl.dataset.idx;
+
+      console.log('EVENT_DELEGATION:', source, idx);
+      handleTxClick(txEl, source, idx);
+    }, true);
+
+    const savedURL = localStorage.getItem('cc_script_url');
+    if (savedURL) {
+      SCRIPT_URL = savedURL;
+      DEMO_MODE = false;
+      startApp();
+    }
+  </script>
 </body>
 
 </html>
