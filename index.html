@@ -1263,7 +1263,7 @@
           </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
-        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250145</div>
+        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250215</div>
       </div>
 
       <!-- Saldo total histórico -->
@@ -2428,10 +2428,9 @@ function updateGastoFijo(ss, data) {
           const cls = r.tipomov === 'Ingreso' ? 'pos' : r.tipomov === 'Futuro' ? 'neu' : 'neg';
           const badgeCls = r.tipogasto === 'Supervivencia' ? 'fijo' : (r.tipogasto === 'Estilo' || r.tipogasto === 'Deuda') ? 'variable' : r.tipomov === 'Ingreso' ? 'ingreso' : 'nocomp';
           const badgeTxt = r.tipogasto || r.tipomov;
-          // Calcular índice real en DB para edición
           const dbIdx = (r._idx !== undefined) ? r._idx : (srcType === 'efectivo' ? DB.efectivo.indexOf(r) : DB.registros.indexOf(r));
 
-          return `<div class="tx" onclick="handleTxClick(this, '${srcType}', ${dbIdx})" style="cursor:pointer">
+          return `<div class="tx" onclick="handleTxClick(this, '${srcType}', ${dbIdx}, event)" style="cursor:pointer">
       <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
       <div class="tx-info">
         <div class="tx-name">${r.concepto || 'Sin concepto'}</div>
@@ -2458,7 +2457,7 @@ function updateGastoFijo(ss, data) {
         document.getElementById('ef-top-list').innerHTML = gastos.length
           ? gastos.map(r => {
             const dbIdx = DB.efectivo.indexOf(r);
-            return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx})" style="cursor:pointer">
+            return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx}, event)" style="cursor:pointer">
             <div class="tx-icon" style="background:var(--red-bg)">💸</div>
             <div class="tx-info"><div class="tx-name">${r.concepto}</div><div class="tx-meta">${fmtDate(r.fecha)}${r.descripcion ? ' · ' + r.descripcion : ''}</div></div>
             <div class="tx-amount neg">${fmt(r.importe)}</div>
@@ -2470,7 +2469,7 @@ function updateGastoFijo(ss, data) {
         document.getElementById('ef-list').innerHTML = todos.length
           ? todos.map((r, i) => {
             const dbIdx = DB.efectivo.indexOf(r);
-            return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx})" style="cursor:pointer">
+            return `<div class="tx" onclick="handleTxClick(this, 'efectivo', ${dbIdx}, event)" style="cursor:pointer">
             <div class="tx-icon" style="background:var(--${r.tipo === 'Gasto' ? 'red' : 'green'}-bg)">💵</div>
             <div class="tx-info">
               <div class="tx-name">${r.concepto}</div>
@@ -2643,7 +2642,7 @@ function updateGastoFijo(ss, data) {
                 ? '<span class="badge variable" style="margin-left:4px">variable</span>'
                 : r.tipomov === 'Ingreso' ? '<span class="badge ingreso" style="margin-left:4px">ingreso</span>' : '';
 
-            return `<div class="tx" onclick="handleTxClick(this, '${r._src || 'banco'}', ${r._idx})" style="cursor:pointer">
+            return `<div class="tx" onclick="handleTxClick(this, '${r._src || 'banco'}', ${r._idx}, event)" style="cursor:pointer">
             <div style="display:flex;align-items:center;gap:12px">
               <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
               <div class="tx-info">
@@ -2791,7 +2790,14 @@ function updateGastoFijo(ss, data) {
       }
 
       function openModal(id) {
-        document.getElementById(id).classList.add('open');
+        console.log('Opening modal:', id);
+        const el = document.getElementById(id);
+        if (!el) {
+          console.error('Modal element not found:', id);
+          showToast('❌ Error: El formulario ' + id + ' no existe en el HTML', 'error');
+          return;
+        }
+        el.classList.add('open');
         document.body.style.overflow = 'hidden';
       }
 
