@@ -525,11 +525,11 @@
     }
 
     .tx:active { background: var(--bg3); }
-    .tx.selected { background: var(--primary-bg) !important; border-left: 4px solid var(--primary); }
+    .tx.selected { background: rgba(88, 166, 255, 0.15) !important; border-left: 4px solid var(--accent) !important; }
     
-    .fab-container { position: fixed; bottom: 85px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 999; }
-    .btn-edit-action { background: var(--secondary); color: white; padding: 12px 20px; border-radius: 30px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; display: none; border: none; align-items: center; gap: 8px; animation: slideUp 0.3s ease; }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .fab-container { position: fixed; bottom: 85px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 1001; }
+    .btn-edit-action { background: var(--purple); color: white; padding: 12px 20px; border-radius: 30px; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; border: none; align-items: center; gap: 8px; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
     .tx:first-child {
       border-radius: var(--r) var(--r) 0 0
@@ -2671,30 +2671,6 @@ function updateGastoFijo(ss, data) {
 
     function openAddModal() {
       deselectTx();
-      if (currentTab === 'efectivo') openModal('modal-ef');
-      else openModal('modal-reg');
-    }
-
-    function openSelectedEdit() {
-      if (!selectedTx) return;
-      if (selectedTx.src === 'efectivo') openEditEfectivo(selectedTx.idx);
-      else openEditRegistro(selectedTx.idx);
-      deselectTx();
-    }
-
-    function setRegFilter(f, el) {
-      regFilter = f;
-      document.querySelectorAll('#reg-chips .chip').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
-      renderRegistros();
-    }
-
-    // setQFilter reemplazado por setQMes/setQCat/setQTipo
-
-    // ═══════════════════════════════════════════════════════════
-    // MODALS
-    // ═══════════════════════════════════════════════════════════
-    function openAddModal() {
       initCategories('f-categoria');
       if (currentTab === 'efectivo') {
         initCategories('ef-categoria');
@@ -2704,6 +2680,23 @@ function updateGastoFijo(ss, data) {
         openModal('modal-reg');
       }
     }
+
+    function openSelectedEdit() {
+      if (!selectedTx) return;
+      if (selectedTx.src === 'efectivo') openEditEfectivo(selectedTx.idx);
+      else openEditRegistro(selectedTx.idx);
+    }
+
+    function setRegFilter(f, el) {
+      regFilter = f;
+      document.querySelectorAll('#reg-chips .chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderRegistros();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODALS
+    // ═══════════════════════════════════════════════════════════
 
     function initCategories(selectId) {
       const cat = document.getElementById(selectId);
@@ -3007,6 +3000,19 @@ function updateGastoFijo(ss, data) {
       openModal('modal-edit-ef');
     }
 
+    async function deleteEfectivo() {
+      const idx = parseInt(document.getElementById('edit-ef-idx').value);
+      if (!confirm('¿Eliminar este registro de efectivo?')) return;
+      
+      const row = DB.efectivo[idx];
+      DB.efectivo.splice(idx, 1);
+      closeModal('modal-edit-ef');
+      renderEfectivo();
+      deselectTx();
+      showToast('✅ Registro eliminado');
+      await apiPost({ action: 'deleteEfectivo', row });
+    }
+
     async function saveEditEfectivo() {
       const idx = parseInt(document.getElementById('edit-ef-idx').value);
       const original = { ...DB.efectivo[idx] };
@@ -3090,8 +3096,10 @@ function updateGastoFijo(ss, data) {
 
       console.log('editRegistro result:', JSON.stringify(result));
 
-      renderAll();
+      // Cerrar y refrescar
       closeModal('modal-edit');
+      renderRegistros();
+      deselectTx();
       if (result && result.ok) {
         showToast('✅ Registro actualizado en Sheets', 'success');
       } else if (result && result.error) {
