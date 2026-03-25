@@ -1107,7 +1107,7 @@
       border-radius: var(--r);
       padding: 12px 20px;
       font-size: 13px;
-      z-index: 500;
+      z-index: 5000;
       transition: transform .3s cubic-bezier(.4, 0, .2, 1);
       white-space: nowrap;
       box-shadow: 0 8px 32px rgba(0, 0, 0, .4)
@@ -2686,22 +2686,22 @@ function updateGastoFijo(ss, data) {
 
           const index = parseInt(idx);
           if (isNaN(index)) {
-            console.error('Invalid index:', idx);
-            showToast('❌ Error: Índice de registro inválido', 'error');
+            alert('❌ ERROR: Índice inválido (' + idx + ')');
             return;
           }
 
           selectedTx = { src, idx: index };
-          console.log('Setting selectedTx:', JSON.stringify(selectedTx));
+          console.log('SelectedTx:', JSON.stringify(selectedTx));
 
-          // Small delay to ensure selection is visible before modal opens (optional)
-          openSelectedEdit();
-
-          if (e && e.stopPropagation) e.stopPropagation();
+          if (e) e.stopPropagation();
           else if (window.event) window.event.stopPropagation();
+
+          // Debugging alert
+          alert('DEBUG: Clic en ' + src + ' #' + index);
+
+          openSelectedEdit();
         } catch (err) {
-          console.error('Crash in handleTxClick:', err);
-          showToast('❌ Error al procesar clic: ' + err.message, 'error');
+          alert('FATAL ERROR handleTxClick: ' + err.message);
         }
       }
 
@@ -2735,24 +2735,19 @@ function updateGastoFijo(ss, data) {
         try {
           if (src === 'efectivo') {
             if (idx === null || idx === undefined || idx < 0 || !DB.efectivo[idx]) {
-              const msg = '⚠ Registro de efectivo no encontrado (idx: ' + idx + ')';
-              console.error(msg);
-              showToast(msg, 'error');
+              alert('⚠ Registro de EFECTIVO no encontrado.\nÍndice: ' + idx + '\nTotal en DB: ' + DB.efectivo.length);
               return;
             }
             openEditEfectivo(idx);
           } else {
             if (idx === null || idx === undefined || idx < 0 || !DB.registros[idx]) {
-              const msg = '⚠ Registro bancario no encontrado (idx: ' + idx + ')';
-              console.error(msg);
-              showToast(msg, 'error');
+              alert('⚠ Registro BANCARIO no encontrado.\nÍndice: ' + idx + '\nTotal en DB: ' + DB.registros.length);
               return;
             }
             openEditRegistro(idx);
           }
         } catch (err) {
-          console.error('Error in openSelectedEdit branch:', err);
-          showToast('❌ Error al abrir editor: ' + err.message, 'error');
+          alert('FATAL ERROR openSelectedEdit: ' + err.message);
         }
       }
 
@@ -2826,6 +2821,8 @@ function updateGastoFijo(ss, data) {
         }
         el.classList.add('open');
         document.body.style.overflow = 'hidden';
+        console.log('Modal', id, 'should be visible now');
+        // showToast('📂 Formulario abierto', 'success'); 
       }
 
       function closeModal(id) {
@@ -3183,7 +3180,11 @@ function updateGastoFijo(ss, data) {
         if (result && result.ok) {
           // Sincronizar efectivo si era una retirada
           if (original.categoria === 'Efectivo') {
-            const efIdx = DB.efectivo.findIndex(e => e.fecha === original.fecha && e.concepto === original.concepto && Math.abs(e.importe) === Math.abs(original.importe));
+            const efIdx = DB.efectivo.findIndex(e =>
+              e.fecha === original.fecha &&
+              e.concepto === original.concepto &&
+              Math.abs(Math.abs(e.importe) - Math.abs(original.importe)) < 0.01
+            );
             if (efIdx >= 0) {
               const efR = DB.efectivo[efIdx];
               const efRow = [efR.fecha, efR.concepto, efR.descripcion, efR.importe, efR.tipo, efR.tipogasto, efR.categoria];
