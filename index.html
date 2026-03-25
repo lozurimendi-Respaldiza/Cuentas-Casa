@@ -1263,7 +1263,7 @@
           </div>
         </div>
         <div class="sync-status" id="sync-status">Sincronizando...</div>
-        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250130</div>
+        <div style="font-size:10px;color:var(--text3);text-align:right;margin-top:2px">v202603250145</div>
       </div>
 
       <!-- Saldo total histórico -->
@@ -1502,7 +1502,7 @@
   <div class="modal-overlay" id="modal-reg">
     <div class="modal">
       <div class="modal-handle"></div>
-      <div class="modal-title" id="modal-title">Nuevo registro</div>
+      <div class="modal-title" id="modal-title">Modificar o Eliminar Registro</div>
       <div id="modal-form-reg">
         <div class="form-row">
           <div class="form-group">
@@ -1585,7 +1585,7 @@
     <div class="modal-overlay" id="modal-ef">
       <div class="modal">
         <div class="modal-handle"></div>
-        <div class="modal-title">Movimiento de efectivo</div>
+        <div class="modal-title">Modificar o Eliminar Efectivo</div>
         <div class="form-group">
           <label class="form-label">Fecha</label>
           <input class="form-inp" type="date" id="ef-fecha">
@@ -1638,7 +1638,7 @@
       <div class="modal">
         <div class="modal-handle"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <div class="modal-title" style="margin:0">Editar registro</div>
+          <div class="modal-title" style="margin:0">Modificar o Eliminar Registro</div>
           <button onclick="deleteRegistro()"
             style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer">🗑
             Eliminar</button>
@@ -1722,7 +1722,7 @@
       <div class="modal">
         <div class="modal-handle"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <div class="modal-title" style="margin:0">Editar efectivo</div>
+          <div class="modal-title" style="margin:0">Modificar o Eliminar Efectivo</div>
           <button onclick="deleteEfectivo()"
             style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:var(--rs);padding:7px 14px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer">🗑
             Eliminar</button>
@@ -2673,9 +2673,15 @@ function updateGastoFijo(ss, data) {
       }
 
       function handleTxClick(el, src, idx) {
+        if (!el) return;
         document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
         el.classList.add('selected');
-        selectedTx = { src, idx };
+
+        // Diagnostic: check if idx is valid
+        const index = parseInt(idx);
+        selectedTx = { src, idx: index };
+
+        console.log('Clicked TX:', src, index);
         openSelectedEdit();
         if (window.event) window.event.stopPropagation();
       }
@@ -2699,27 +2705,28 @@ function updateGastoFijo(ss, data) {
 
       function openSelectedEdit() {
         if (!selectedTx) {
-          showToast('⚠️ Selecciona un registro primero', 'error');
+          // No alert needed for simple deselection, but we want to know if it fails
           return;
         }
+
+        const { src, idx } = selectedTx;
         try {
-          const { src, idx } = selectedTx;
           if (src === 'efectivo') {
-            if (idx !== null && idx >= 0 && DB.efectivo[idx]) {
-              openEditEfectivo(idx);
-            } else {
-              showToast('❌ Error: Registro de efectivo no encontrado (índice ' + idx + ')', 'error');
+            if (idx === null || idx === undefined || idx < 0 || !DB.efectivo[idx]) {
+              showToast('⚠ Registro de efectivo no encontrado (idx: ' + idx + ')', 'error');
+              return;
             }
+            openEditEfectivo(idx);
           } else {
-            if (idx !== null && idx >= 0 && DB.registros[idx]) {
-              openEditRegistro(idx);
-            } else {
-              showToast('❌ Error: Registro bancario no encontrado (índice ' + idx + ')', 'error');
+            if (idx === null || idx === undefined || idx < 0 || !DB.registros[idx]) {
+              showToast('⚠ Registro bancario no encontrado (idx: ' + idx + ')', 'error');
+              return;
             }
+            openEditRegistro(idx);
           }
         } catch (err) {
-          console.error(err);
-          showToast('❌ Error al abrir: ' + err.message, 'error');
+          console.error('Error in openSelectedEdit:', err);
+          showToast('❌ Error: ' + err.message, 'error');
         }
       }
 
