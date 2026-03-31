@@ -1225,7 +1225,8 @@
       </div>
       <div class="form-group">
         <label class="form-label">Concepto</label>
-        <input class="form-inp" type="text" id="f-concepto" placeholder="Descripción">
+        <input class="form-inp" type="text" id="f-concepto" placeholder="Descripción" list="ac-conceptos"
+          autocomplete="off">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1290,7 +1291,7 @@
       <div class="form-group">
         <label class="form-label">Concepto</label>
         <input class="form-inp" type="text" id="edit-edit-concepto" style="display:none">
-        <input class="form-inp" type="text" id="edit-concepto">
+        <input class="form-inp" type="text" id="edit-concepto" list="ac-conceptos" autocomplete="off">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1649,7 +1650,8 @@
       </div>
       <div class="form-group">
         <label class="form-label">Concepto</label>
-        <input class="form-inp" type="text" id="ef-concepto" placeholder="Ej: Panadería">
+        <input class="form-inp" type="text" id="ef-concepto" placeholder="Ej: Panadería" list="ac-conceptos"
+          autocomplete="off">
       </div>
       <div class="form-group">
         <label class="form-label">Descripción</label>
@@ -1704,7 +1706,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Concepto</label>
-        <input class="form-inp" type="text" id="edit-ef-concepto">
+        <input class="form-inp" type="text" id="edit-ef-concepto" list="ac-conceptos" autocomplete="off">
       </div>
       <div class="form-group">
         <label class="form-label">Categoría</label>
@@ -1736,6 +1738,9 @@
   <div class="fab-container" id="fab">
     <button class="fab" onclick="openAddModal()">+</button>
   </div>
+
+  <!-- DATALIST AUTOCOMPLETADO CONCEPTOS -->
+  <datalist id="ac-conceptos"></datalist>
 
   <!-- TOAST -->
   <div class="toast" id="toast"></div>
@@ -2166,8 +2171,10 @@ function updateGastoFijo(ss, data) {
         setSyncStatus('Actualizado ' + new Date().toLocaleTimeString('es'));
         if (pendingQueue.length) flushQueue();
       } catch (e) {
-        setSyncStatus('⚠ Error de conexión');
-        showToast('Error de sincronización: ' + e.message, 'error');
+        // Error de red: actualizar solo la barra de estado, no bloquear con toast rojo
+        renderAll(); // mostrar datos locales disponibles
+        const msg = e.message && e.message.length < 60 ? e.message : 'Sin conexión con Google Sheets';
+        setSyncStatus('⚠ ' + msg + ' — pulsa ↻ para reintentar');
       }
       document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('spinning'));
     }
@@ -2288,6 +2295,17 @@ function updateGastoFijo(ss, data) {
       renderGastosFijos();
       buildQSelects();
       renderConsultas();
+      updateConceptosList();
+    }
+
+    function updateConceptosList() {
+      const dl = document.getElementById('ac-conceptos');
+      if (!dl) return;
+      const conceptos = [...new Set([
+        ...DB.registros.map(r => r.concepto),
+        ...DB.efectivo.map(r => r.concepto)
+      ].filter(Boolean))].sort();
+      dl.innerHTML = conceptos.map(c => `<option value="${c.replace(/"/g, '&quot;')}"></option>`).join('');
     }
 
     const fmt = (n) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(n);
@@ -2602,7 +2620,7 @@ function updateGastoFijo(ss, data) {
         return;
       }
 
-      el.innerHTML = `<div class="tx-list">`
+      el.innerHTML = `<div class="tx-list" id="q-results-list">`
         + results.slice(0, 100).map(r => {
           const icon = getCatIcon(r.categoria);
           const cls = r.tipomov === 'Ingreso' ? 'pos' : r.tipomov === 'Futuro' ? 'neu' : 'neg';
@@ -2613,7 +2631,9 @@ function updateGastoFijo(ss, data) {
               ? '<span class="badge variable" style="margin-left:4px">variable</span>'
               : r.tipomov === 'Ingreso' ? '<span class="badge ingreso" style="margin-left:4px">ingreso</span>' : '';
 
-          return `<div class="tx" onclick="handleTxClick(this, '${r._src || 'banco'}', ${r._idx}, event)" style="cursor:pointer">
+          const qSrc = r._src || 'banco';
+          const qIdx = r._idx;
+          return `<div class="tx" data-idx="${qIdx}" data-src="${qSrc}" onclick="handleTxClick(this,'${qSrc}',${qIdx},event)" style="cursor:pointer">
             <div style="display:flex;align-items:center;gap:12px">
               <div class="tx-icon" style="background:var(--${r.tipomov === 'Ingreso' ? 'green' : r.tipomov === 'Futuro' ? 'bg4' : 'red'}-bg)">${icon}</div>
               <div class="tx-info">
@@ -2854,17 +2874,18 @@ function updateGastoFijo(ss, data) {
     // Función eliminada (duplicada)
 
     function onEfCategoriaChange() {
-      const catVal = document.getElementById('ef-categoria').value || document.getElementById('edit-ef-categoria').value;
+      // Identificar si estamos en modal nuevo o edición
+      const isEdit = document.getElementById('modal-edit-ef').classList.contains('open');
+      const prefix = isEdit ? 'edit-ef-' : 'ef-';
+
+      const catEl = document.getElementById(prefix + 'categoria');
+      const catVal = catEl ? catEl.value : '';
       if (!catVal) return;
 
       let foundSub = '';
       if (CATS.Gasto.Supervivencia.includes(catVal)) foundSub = 'Supervivencia';
       else if (CATS.Gasto.Estilo.includes(catVal)) foundSub = 'Estilo';
       else if (CATS.Gasto.Deuda.includes(catVal)) foundSub = 'Deuda';
-
-      // Identificar si estamos en modal nuevo o edición
-      const isEdit = document.getElementById('modal-edit-ef').classList.contains('open');
-      const prefix = isEdit ? 'edit-ef-' : 'ef-';
 
       if (foundSub) {
         document.getElementById(prefix + 'tipo').value = 'Gasto';
@@ -3155,6 +3176,31 @@ function updateGastoFijo(ss, data) {
       if (!confirm('¿Eliminar este registro?')) return;
       const original = { ...DB.registros[idx] };
 
+      // Primero eliminar el registro bancario localmente
+      DB.registros.splice(idx, 1);
+
+      // Si era una retirada de efectivo (categoría Efectivo), eliminar también de efectivo
+      let efRow = null;
+      if (original.categoria === 'Efectivo') {
+        const efIdx = DB.efectivo.findIndex(e =>
+          e.fecha === original.fecha &&
+          e.concepto === original.concepto &&
+          Math.abs(Math.abs(e.importe) - Math.abs(original.importe)) < 0.01
+        );
+        if (efIdx >= 0) {
+          const efR = DB.efectivo[efIdx];
+          efRow = [efR.fecha, efR.concepto, efR.descripcion, efR.importe, efR.tipo, efR.tipogasto, efR.categoria];
+          DB.efectivo.splice(efIdx, 1);
+        }
+      }
+
+      // Actualizar UI inmediatamente
+      renderAll();
+      closeModal('modal-edit');
+      deselectTx();
+      showToast('🗑 Registro eliminado', 'success');
+
+      // Sincronizar con Sheets en segundo plano
       const result = await apiPost({
         action: 'deleteRegistro',
         row: [original.fecha, original.importe, original.concepto, original.entidad,
@@ -3162,51 +3208,46 @@ function updateGastoFijo(ss, data) {
       });
 
       if (result && result.ok) {
-        // Sincronizar efectivo si era una retirada
-        if (original.categoria === 'Efectivo') {
-          const efIdx = DB.efectivo.findIndex(e =>
-            e.fecha === original.fecha &&
-            e.concepto === original.concepto &&
-            Math.abs(Math.abs(e.importe) - Math.abs(original.importe)) < 0.01
-          );
-          if (efIdx >= 0) {
-            const efR = DB.efectivo[efIdx];
-            const efRow = [efR.fecha, efR.concepto, efR.descripcion, efR.importe, efR.tipo, efR.tipogasto, efR.categoria];
-            DB.efectivo.splice(efIdx, 1);
-            apiPost({ action: 'deleteEfectivo', row: efRow });
-          }
+        // Si había un registro de efectivo vinculado, eliminarlo en Sheets también
+        if (efRow) {
+          await apiPost({ action: 'deleteEfectivo', row: efRow });
         }
-        DB.registros.splice(idx, 1);
-        renderAll();
-        closeModal('modal-edit');
-        showToast('✅ Registro eliminado en Sheets', 'success');
-      } else {
-        DB.registros.splice(idx, 1);
-        renderAll();
-        closeModal('modal-edit');
-        showToast('🗑 Eliminado localmente', '');
+        if (original.categoria === 'Efectivo' && efRow) {
+          showToast('✅ Registro y efectivo eliminados', 'success');
+        } else {
+          showToast('✅ Eliminado en Sheets', 'success');
+        }
+      } else if (result && result.error) {
+        showToast('⚠ Eliminado local. Error Sheets: ' + result.error, 'error');
       }
     }
 
 
     // INIT
     // ═══════════════════════════════════════════════════════════
-    // EVENT DELEGATION PARA CLICS FIABLES
+    // EVENT DELEGATION PARA CLICS FIABLES (fase burbujeo)
     document.addEventListener('click', function (e) {
       const txEl = e.target.closest('.tx');
       if (!txEl) return;
 
-      // Evitar doble disparo
-      e.preventDefault();
+      // Ignorar clics dentro de un modal overlay (para no interferir con botones dentro de modales)
+      if (e.target.closest('.modal-overlay')) return;
+
+      // Detener burbujeo para evitar múltiple disparo
       e.stopPropagation();
 
-      const listEl = txEl.closest('.tx-list');
-      const source = listEl ? (listEl.dataset.source || 'banco') : 'banco';
+      // Leer fuente: primero del propio elemento (data-src, usado en Consultas),
+      // luego del contenedor tx-list mediante data-source
+      let source = txEl.dataset.src || '';
+      if (!source) {
+        const listEl = txEl.closest('.tx-list');
+        source = listEl ? (listEl.dataset.source || 'banco') : 'banco';
+      }
       const idx = txEl.dataset.idx;
 
       console.log('EVENT_DELEGATION:', source, idx);
       handleTxClick(txEl, source, idx);
-    }, true);
+    }, false);
 
     const savedURL = localStorage.getItem('cc_script_url');
     if (savedURL) {
