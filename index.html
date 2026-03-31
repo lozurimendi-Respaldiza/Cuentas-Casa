@@ -2679,24 +2679,36 @@ function updateGastoFijo(ss, data) {
 
       try {
         if (!el) return;
-        console.log('TX_CLICK:', src, idx);
 
-        // Remover selección previa
+        // Limpiar selección previa
         document.querySelectorAll('.tx').forEach(tx => tx.classList.remove('selected'));
-
-        // Marcar actual
         el.classList.add('selected');
 
-        const index = parseInt(idx);
+        // Extraer idx de manera robusta
+        let resolvedIdx = idx;
+        if (typeof resolvedIdx === 'object' || resolvedIdx === undefined || resolvedIdx === null) {
+          resolvedIdx = el.dataset.idx || el.getAttribute('data-idx');
+        }
+        let index = parseInt(resolvedIdx, 10);
+
+        // Extraer src de manera robusta
+        let resolvedSrc = src;
+        if (!resolvedSrc || typeof resolvedSrc === 'object') {
+          resolvedSrc = el.dataset.src || el.getAttribute('data-src');
+        }
+
         if (isNaN(index)) {
-          showToast('❌ Error: Índice no válido', 'error');
+          console.error('TX_CLICK_FAIL', { src, idx, resolvedSrc, resolvedIdx, html: el.outerHTML });
+          showToast('❌ Error: Índice no válido (' + resolvedIdx + ')', 'error');
           return;
         }
 
-        selectedTx = { src, idx: index };
+        selectedTx = { src: resolvedSrc, idx: index };
+        console.log('TX_CLICK_SUCCESS', selectedTx);
 
         // Intentar abrir el formulario directamente
         openSelectedEdit();
+
 
       } catch (err) {
         console.error(err);
