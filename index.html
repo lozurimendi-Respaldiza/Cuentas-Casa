@@ -1241,16 +1241,7 @@
           <select class="form-inp" id="f-categoria" onchange="onCategoriaChange()"></select>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Producto</label>
-          <input class="form-inp" type="text" id="f-producto" placeholder="Nombre banco">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tipo Producto</label>
-          <input class="form-inp" type="text" id="f-tipoprod" placeholder="Cuenta/Tarjeta">
-        </div>
-      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Movimiento</label>
@@ -2648,7 +2639,19 @@ function updateGastoFijo(ss, data) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById('screen-' + tab).classList.add('active');
       document.getElementById('nav-' + tab).classList.add('active');
-      document.getElementById('fab').style.display = ['inicio', 'registros', 'efectivo'].includes(tab) ? 'flex' : 'none';
+
+      const fab = document.getElementById('fab');
+      const fabBtn = fab ? fab.querySelector('.fab') : null;
+      if (fab && fabBtn) {
+        fab.style.display = ['inicio', 'registros', 'efectivo'].includes(tab) ? 'flex' : 'none';
+        if (tab === 'efectivo') {
+          fabBtn.style.background = 'var(--red)';
+          fabBtn.textContent = '💸';
+        } else {
+          fabBtn.style.background = '';
+          fabBtn.textContent = '+';
+        }
+      }
     }
 
     function handleTxClick(el, src, idx, e) {
@@ -2690,9 +2693,16 @@ function updateGastoFijo(ss, data) {
       deselectTx();
       initCategories('f-categoria');
       if (currentTab === 'efectivo') {
-        initCategories('ef-categoria');
-        document.getElementById('ef-categoria-group').style.display = 'flex';
-        openModal('modal-ef');
+        const modalEf = document.getElementById('modal-ef');
+        if (modalEf) {
+          const efTipo = document.getElementById('ef-tipo');
+          if (efTipo) {
+            efTipo.value = 'Gasto';
+            const tg = document.getElementById('ef-tipogasto-group');
+            if (tg) tg.style.display = 'block';
+          }
+          openModal('modal-ef');
+        }
       } else {
         openModal('modal-reg');
       }
@@ -2870,9 +2880,9 @@ function updateGastoFijo(ss, data) {
       const fecha = document.getElementById('f-fecha').value;
       const importe = parseFloat(document.getElementById('f-importe').value);
       const concepto = document.getElementById('f-concepto').value.trim();
-      const entidad = document.getElementById('f-entidad').value;
-      const producto = document.getElementById('f-producto').value;
-      const tipoprod = document.getElementById('f-tipoprod').value;
+      const entidad = document.getElementById('f-entidad') ? document.getElementById('f-entidad').value : '';
+      const producto = document.getElementById('f-producto') ? document.getElementById('f-producto').value : '';
+      const tipoprod = document.getElementById('f-tipoprod') ? document.getElementById('f-tipoprod').value : '';
       const tipomov = document.getElementById('f-tipomov').value;
       const tipogasto = document.getElementById('f-tipogasto').value;
       const categoria = document.getElementById('f-categoria').value;
